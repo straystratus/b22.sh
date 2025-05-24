@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>b22terminal</title>
+    <title>b22.sh</title>
     <style>
         body {
             background-color: #1a1a1a;
@@ -53,6 +53,34 @@
         .dir {
             color: #4FC3F7;
         }
+        
+        .exe {
+            color: #FF5252;
+        }
+        
+        .config {
+            color: #9C27B0;
+        }
+        
+        .md {
+            color: #00BCD4;
+        }
+        
+        .dir::before {
+            content: "📁 ";
+        }
+        
+        .file::before {
+            content: "📄 ";
+        }
+        
+        .md::before {
+            content: "📝 ";
+        }
+        
+        .config::before {
+            content: "⚙️ ";
+        }
     </style>
 </head>
 <body>
@@ -70,55 +98,96 @@ use 'help' if needed
     </div>
 
     <script>
-        // Structure du site
+        // File system structure
         const fileSystem = {
             '~': {
-                'about.txt': 'Je suis un développeur passionné par les technologies web et les systèmes Unix.',
+                'about.txt': 'I am a developer passionate about web technologies and Unix systems.',
+                'skills.txt': 'JavaScript, Python, Linux, Docker, React',
                 'projects': {
-                    'site-terminal.html': 'Le code source de ce site terminal',
-                    'autres-projets.txt': 'Divers projets en développement'
+                    'terminal-website.html': 'The source code for this terminal website',
+                    'web-apps': {
+                        'ecommerce.md': 'E-commerce platform with React',
+                        'dashboard.html': 'Admin dashboard project'
+                    },
+                    'games': {
+                        'chess.js': 'JavaScript chess engine',
+                        'platformer': {
+                            'main.py': 'Python platformer game',
+                            'assets.txt': 'Game assets list'
+                        }
+                    }
                 },
-                'contact.txt': 'Email: contact@example.com\nTwitter: @monhandle'
+                'contact.txt': 'Email: contact@b22.dev\nGitHub: @b22terminal',
+                'journal.md': `# Development Log
+## 2023-10-15
+- Added virtual file system
+- Implemented core commands
+
+## 2023-10-16
+- Improved UI/UX
+- Fixed navigation bugs`,
+                'config': {
+                    'settings.json': '{"theme":"dark","font":"monospace"}',
+                    'keys.txt': 'API keys and configurations'
+                },
+                'system': {
+                    'info.txt': 'B22Terminal v1.0\nLast updated: 2023-10-16',
+                    'bin': {
+                        'cli-tool.js': 'Command line utility'
+                    }
+                }
             }
         };
 
-        // État courant
+        // Current state
         let currentPath = ['~'];
         let commandHistory = [];
         let historyIndex = 0;
 
-        // Éléments DOM
+        // DOM elements
         const commandInput = document.getElementById('command-input');
         const historyDiv = document.getElementById('history');
 
-        // Commandes disponibles
+        // Available commands
         const commands = {
             'help': {
-                description: 'Affiche cette aide',
+                description: 'Show this help message',
                 execute: () => {
-                    let helpText = 'Commandes disponibles:\n';
+                    let helpText = 'Available commands:\n';
                     for (const cmd in commands) {
-                        helpText += `  ${cmd} - ${commands[cmd].description}\n`;
+                        helpText += `  ${cmd.padEnd(10)} - ${commands[cmd].description}\n`;
                     }
                     return helpText;
                 }
             },
             'ls': {
-                description: 'Liste les fichiers et répertoires',
+                description: 'List directory contents',
                 execute: (args) => {
                     const dir = navigateToPath(args[0] || '');
                     if (typeof dir === 'string') return dir;
                     
                     let output = '';
-                    for (const item in dir) {
-                        const type = typeof dir[item] === 'object' ? 'dir' : 'file';
+                    // Sort directories first, then files
+                    const items = Object.keys(dir).sort((a, b) => {
+                        const aIsDir = typeof dir[a] === 'object';
+                        const bIsDir = typeof dir[b] === 'object';
+                        return bIsDir - aIsDir || a.localeCompare(b);
+                    });
+                    
+                    items.forEach(item => {
+                        let type = 'file';
+                        if (typeof dir[item] === 'object') type = 'dir';
+                        else if (item.endsWith('.json')) type = 'config';
+                        else if (item.endsWith('.md')) type = 'md';
+                        else if (item.endsWith('.js')) type = 'exe';
+                        
                         output += `<span class="${type}">${item}</span>  `;
-                    }
+                    });
                     return output;
                 }
             },
             'cd': {
-                description: 'Change de répertoire',
+                description: 'Change directory',
                 execute: (args) => {
                     if (!args[0]) {
                         currentPath = ['~'];
@@ -137,9 +206,9 @@ use 'help' if needed
                 }
             },
             'cat': {
-                description: 'Affiche le contenu d\'un fichier',
+                description: 'Display file contents',
                 execute: (args) => {
-                    if (!args[0]) return 'Usage: cat <fichier>';
+                    if (!args[0]) return 'Usage: cat <file>';
                     
                     const pathParts = args[0].split('/');
                     const fileName = pathParts.pop();
@@ -148,22 +217,26 @@ use 'help' if needed
                     const dir = navigateToPath(dirPath || '.');
                     if (typeof dir === 'string') return dir;
                     
-                    if (!dir[fileName]) return `cat: ${args[0]}: Fichier non trouvé`;
-                    if (typeof dir[fileName] === 'object') return `cat: ${args[0]}: Est un répertoire`;
+                    if (!dir[fileName]) return `cat: ${args[0]}: No such file`;
+                    if (typeof dir[fileName] === 'object') return `cat: ${args[0]}: Is a directory`;
                     
                     return dir[fileName];
                 }
             },
             'clear': {
-                description: 'Efface l\'écran',
+                description: 'Clear the terminal',
                 execute: () => {
                     historyDiv.innerHTML = '';
                     return '';
                 }
+            },
+            'pwd': {
+                description: 'Print working directory',
+                execute: () => currentPath.join('/')
             }
         };
 
-        // Navigation dans le système de fichiers
+        // Navigate through file system
         function navigateToPath(path) {
             let dir = fileSystem;
             const pathParts = path ? path.split('/') : [];
@@ -175,8 +248,8 @@ use 'help' if needed
                     continue;
                 }
                 
-                if (!dir[part]) return `chemin: ${path}: Répertoire non trouvé`;
-                if (typeof dir[part] !== 'object') return `chemin: ${path}: N'est pas un répertoire`;
+                if (!dir[part]) return `path: ${path}: No such directory`;
+                if (typeof dir[part] !== 'object') return `path: ${path}: Not a directory`;
                 
                 dir = dir[part];
             }
@@ -184,23 +257,23 @@ use 'help' if needed
             return dir;
         }
 
-        // Gestion des commandes
+        // Execute commands
         function executeCommand(cmd) {
             const parts = cmd.split(' ');
             const command = parts[0];
             const args = parts.slice(1);
             
             if (!commands[command]) {
-                return `${command}: commande non trouvée. Tapez 'help' pour la liste des commandes.`;
+                return `${command}: command not found. Type 'help' for available commands.`;
             }
             
             return commands[command].execute(args);
         }
 
-        // Affichage dans le terminal
+        // Display in terminal
         function printCommand(cmd) {
             const prompt = document.createElement('div');
-            prompt.innerHTML = `<span class="prompt">visiteur@site:${currentPath.join('/')}$ </span><span class="command">${cmd}</span>`;
+            prompt.innerHTML = `<span class="prompt">deus@machina:${currentPath.join('/')}$ </span><span class="command">${cmd}</span>`;
             historyDiv.appendChild(prompt);
         }
 
@@ -213,7 +286,7 @@ use 'help' if needed
             historyDiv.appendChild(outputDiv);
         }
 
-        // Gestion des événements
+        // Event handling
         commandInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const cmd = commandInput.value.trim();
@@ -227,7 +300,7 @@ use 'help' if needed
                     
                     commandInput.value = '';
                     
-                    // Faire défiler vers le bas
+                    // Scroll to bottom
                     window.scrollTo(0, document.body.scrollHeight);
                 }
             } else if (e.key === 'ArrowUp') {
@@ -245,10 +318,17 @@ use 'help' if needed
                     commandInput.value = '';
                 }
                 e.preventDefault();
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                const input = commandInput.value;
+                const matches = Object.keys(commands).filter(cmd => cmd.startsWith(input));
+                if (matches.length === 1) {
+                    commandInput.value = matches[0] + ' ';
+                }
             }
         });
 
-        // Focus sur l'input
+        // Focus on input
         document.addEventListener('click', () => {
             commandInput.focus();
         });
