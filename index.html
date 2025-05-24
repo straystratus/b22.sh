@@ -41,6 +41,8 @@
       width: 100%;
       outline: none;
       margin-left: 5px;
+      padding: 0;
+      flex: 1;
     }
     .dir {
       color: #4FC3F7;
@@ -52,11 +54,11 @@
 </head>
 <body>
   <div id="terminal">
-    <div class="output">Welcome to b22.sh terminal emulator
+    <div class="output">
 Type 'help' for available commands.</div>
     <div id="history"></div>
     <div id="input-line">
-      <span class="prompt" id="prompt">user@b22:~$ </span>
+      <span class="prompt" id="prompt">deus@machina:~$ </span>
       <input type="text" id="command-input" autofocus autocomplete="off" spellcheck="false">
     </div>
   </div>
@@ -230,7 +232,7 @@ Type 'help' for available commands.</div>
     }
 
     function updatePrompt() {
-      prompt.textContent = `user@b22:/${currentPath.join('/')}$ `;
+      prompt.textContent = `deus@machina:/${currentPath.join('/')}$ `;
     }
 
     function addToHistory(command, output) {
@@ -253,20 +255,35 @@ Type 'help' for available commands.</div>
           commandHistory.push(command);
           historyIndex = commandHistory.length;
           const output = executeCommand(command);
-	  if (command !== 'clear') {
+          if (command !== 'clear') {
             addToHistory(command, output);
-	  } else {
-	    clearScreen();
-	  }
+          } else {
+            clearScreen();
+          }
           input.value = '';
+          // Recentrer le curseur après exécution
+          setTimeout(() => {
+            input.focus();
+            input.selectionStart = input.selectionEnd = input.value.length;
+          }, 0);
         }
       } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
         if (historyIndex > 0) {
           input.value = commandHistory[--historyIndex];
+          // Positionner le curseur à la fin
+          setTimeout(() => {
+            input.selectionStart = input.selectionEnd = input.value.length;
+          }, 0);
         }
       } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
         if (historyIndex < commandHistory.length - 1) {
           input.value = commandHistory[++historyIndex];
+          // Positionner le curseur à la fin
+          setTimeout(() => {
+            input.selectionStart = input.selectionEnd = input.value.length;
+          }, 0);
         } else {
           input.value = '';
           historyIndex = commandHistory.length;
@@ -274,9 +291,23 @@ Type 'help' for available commands.</div>
       }
     });
 
-    document.addEventListener('click', () => input.focus());
+    document.addEventListener('click', () => {
+      input.focus();
+      // Positionner le curseur à la fin lors d'un clic
+      setTimeout(() => {
+        input.selectionStart = input.selectionEnd = input.value.length;
+      }, 0);
+    });
+
+    // Positionnement initial du curseur
+    window.addEventListener('load', () => {
+      input.focus();
+      setTimeout(() => {
+        input.selectionStart = input.selectionEnd = input.value.length;
+      }, 0);
+    });
+
     updatePrompt();
   </script>
 </body>
 </html>
-
