@@ -11,6 +11,7 @@
       font-family: 'Courier New', monospace;
       margin: 0;
       padding: 20px;
+      min-height: 100vh;
     }
     #terminal {
       max-width: 800px;
@@ -25,9 +26,11 @@
     .output {
       white-space: pre-wrap;
       margin-bottom: 10px;
+      word-wrap: break-word;
     }
     #input-line {
       display: flex;
+      align-items: center;
     }
     #command-input {
       background: transparent;
@@ -37,188 +40,238 @@
       font-size: 16px;
       width: 100%;
       outline: none;
+      margin-left: 5px;
+    }
+    .dir {
+      color: #4FC3F7;
+    }
+    .file {
+      color: #FFD54F;
     }
   </style>
 </head>
 <body>
   <div id="terminal">
-    <div class="output">type 'help' for available commands.</div>
+    <div class="output">Welcome to b22.sh terminal emulator
+Type 'help' for available commands.</div>
     <div id="history"></div>
     <div id="input-line">
       <span class="prompt" id="prompt">user@b22:~$ </span>
-      <input type="text" id="command-input" autofocus>
+      <input type="text" id="command-input" autofocus autocomplete="off" spellcheck="false">
     </div>
   </div>
 
   <script>
     const fs = {
       'aboutme': {
-        'contacts': 'Email: contact@b22.dev\nGitHub: @b22terminal',
-        'me': 'I am a developer passionate about creating terminal interfaces.',
-        'readings': 'Current reading list:\n- Clean Code\n- The Pragmatic Programmer'
+        'contacts.txt': 'Email: contact@b22.dev\nGitHub: @b22terminal\nLinkedIn: /in/b22dev',
+        'bio.md': '# About Me\n\nPassionate developer creating terminal interfaces.',
+        'readings.md': '## Reading List\n- Clean Code\n- The Pragmatic Programmer'
       },
       'projects': {
-        'p1': 'Project 1: Terminal emulator',
-        'p2': 'Project 2: Web-based filesystem',
-        'p3': 'Project 3: CLI tools collection',
-        'p4': 'Project 4: Documentation generator',
-        'p5': 'Project 5: Automation scripts',
-        'p6': 'Project 6: Experimental prototypes'
+        'p1': 'Terminal emulator project',
+        'p2': 'Web-based filesystem',
+        'p3': 'CLI tools collection',
+        'p4': 'Documentation generator',
+        'p5': 'Automation scripts',
+        'p6': 'Experimental prototypes'
+      },
+      'docs': {
+        'readme.md': '# B22 Terminal\n\nWeb-based terminal emulator',
+        'changelog.md': '# Changelog\n\nv1.0 - Initial release'
       }
     };
 
-    let path = ['~'];
-    let history = [];
-    let historyIndex = 0;
+    let currentPath = [];
+    let commandHistory = [];
+    let historyIndex = -1;
 
     const prompt = document.getElementById('prompt');
     const input = document.getElementById('command-input');
     const historyDiv = document.getElementById('history');
 
-    function getDir(ref = fs, p = path.slice(1)) {
-      for (let part of p) {
-        if (!(part in ref)) return null;
-        ref = ref[part];
-        if (typeof ref !== 'object') return null;
-      }
-      return ref;
-    }
-
-    function getPathStr() {
-      return path.join('/').replace(/^~\/?/, '~/');
-    }
-
-    function ls() {
-      const dir = getDir();
-      if (!dir) return 'ls: failed to access directory';
-      return Object.keys(dir).join('  ');
-    }
-
-    function cd(args) {
-      if (!args[0] || args[0] === '~') {
-        path = ['~'];
-        return '';
-      }
-      const parts = args[0].split('/').filter(Boolean);
-      let newPath = [...path];
-      if (args[0].startsWith('/')) newPath = ['~'];
-
-      for (let part of parts) {
-        if (part === '.') continue;
-        if (part === '..') {
-          if (newPath.length > 1) newPath.pop();
+    function getCurrentDir() {
+      let dir = fs;
+      for (let segment of currentPath) {
+        if (dir[segment] && typeof dir[segment] === 'object') {
+          dir = dir[segment];
         } else {
-          const tmp = getDir(fs, newPath.slice(1));
-          if (!tmp || !(part in tmp) || typeof tmp[part] !== 'object')
-            return `cd: ${args[0]}: Not a directory`;
-          newPath.push(part);
+          return null;
         }
       }
-      path = newPath;
+      return dir;
+    }
+
+    function resolvePath(inputPath) {
+      if (!inputPath) return [...currentPath];
+
+      const isAbsolute = inputPath.startsWith('/');
+      const base = isAbsolute ? [] : [...currentPath];
+      const segments = inputPath.split('/').filter(Boolean);
+
+      for (let segment of segments) {
+        if (segment === '.') continue;
+        if (segment === '..') {
+          base.pop();
+        } else {
+          base.push(segment);
+        }
+      }
+      return base;
+    }
+
+    function listDirectory(args = []) {
+      const path = resolvePath(args[0]);
+      let dir = fs;
+
+      for (let segment of path) {
+        if (!dir[segment]) return `ls: cannot access '${args[0]}': No such file or directory`;
+        dir = dir[segment];
+      }
+
+      if (typeof dir !== 'object') return `ls: not a directory`;
+
+      return Object.keys(dir).map(k => `<span class="${typeof dir[k] === 'object' ? 'dir' : 'file'}">${k}</span>`).join('  ');
+    }
+
+    function changeDirectory(args) {
+      if (args.length === 0) {
+        currentPath = [];
+        updatePrompt();
+        return '';
+      }
+
+      const path = resolvePath(args[0]);
+      let dir = fs;
+      for (let segment of path) {
+        if (!dir[segment] || typeof dir[segment] !== 'object') {
+          return `cd: ${args[0]}: Not a directory`;
+        }
+        dir = dir[segment];
+      }
+
+      currentPath = path;
+      updatePrompt();
       return '';
     }
 
-    function pwd() {
-      return getPathStr();
+    function printWorkingDirectory() {
+      return '/' + currentPath.join('/');
     }
 
-    function cat(args) {
-      if (!args[0]) return 'cat: missing operand';
-      const parts = args[0].split('/');
+    function readFile(args) {
+      if (args.length === 0) return 'cat: missing file operand';
+      const parts = resolvePath(args[0]);
       const file = parts.pop();
-      const dir = getDir(fs, path.slice(1).concat(parts.filter(Boolean)));
-      if (!dir || !(file in dir)) return `cat: ${args[0]}: No such file`;
-      if (typeof dir[file] !== 'string') return `cat: ${args[0]}: Is a directory`;
+      let dir = fs;
+      for (let segment of parts) {
+        if (!dir[segment]) return `cat: ${args[0]}: No such file or directory`;
+        dir = dir[segment];
+      }
+      if (!dir[file]) return `cat: ${args[0]}: No such file or directory`;
+      if (typeof dir[file] === 'object') return `cat: ${args[0]}: Is a directory`;
       return dir[file];
     }
 
-    function tree(dir = getDir(), prefix = '') {
-      if (!dir) return 'tree: not a directory';
-      let output = '';
-      const keys = Object.keys(dir);
-      keys.forEach((key, i) => {
-        const isLast = i === keys.length - 1;
-        output += `${prefix}${isLast ? '└── ' : '├── '}${key}\n`;
-        if (typeof dir[key] === 'object') {
-          output += tree(dir[key], prefix + (isLast ? '    ' : '│   '));
-        }
-      });
+    function displayTree() {
+      const dir = getCurrentDir();
+      if (!dir) return 'tree: cannot access current directory';
+      let output = '/' + currentPath.join('/') + '\n';
+      function build(node, prefix = '') {
+        const keys = Object.keys(node);
+        keys.forEach((k, i) => {
+          const isLast = i === keys.length - 1;
+          output += `${prefix}${isLast ? '└── ' : '├── '}${k}\n`;
+          if (typeof node[k] === 'object') build(node[k], prefix + (isLast ? '    ' : '│   '));
+        });
+      }
+      build(dir);
       return output;
     }
 
-    function help() {
+    function showHelp() {
       return `Available commands:
-  ls      - list files
-  cd      - change directory
-  pwd     - show current path
-  tree    - display directory tree
-  cat     - read file
-  clear   - clear screen
-  help    - show help`;
+  ls [dir]    - list directory contents
+  cd [dir]    - change directory
+  pwd         - print working directory
+  cat <file>  - display file contents
+  tree        - show directory tree
+  clear       - clear terminal
+  help        - show this help`;
     }
 
-    function clear() {
+    function clearScreen() {
       historyDiv.innerHTML = '';
       return '';
     }
 
-    const commands = { ls, cd, pwd, tree, cat, help, clear };
+    const commands = {
+      ls: listDirectory,
+      cd: changeDirectory,
+      pwd: printWorkingDirectory,
+      cat: readFile,
+      tree: displayTree,
+      help: showHelp,
+      clear: clearScreen
+    };
 
-    function execute(cmd) {
-      const parts = cmd.trim().split(/\s+/);
-      const base = parts[0];
-      const args = parts.slice(1);
-      if (base in commands) return commands[base](args);
-      return `${base}: command not found`;
+    function executeCommand(line) {
+      const trimmed = line.trim();
+      if (!trimmed) return '';
+      const [cmd, ...args] = trimmed.split(/\s+/);
+      if (commands[cmd]) {
+        try {
+          return commands[cmd](args);
+        } catch {
+          return `${cmd}: error executing command`;
+        }
+      }
+      return `${cmd}: command not found`;
     }
 
     function updatePrompt() {
-      prompt.textContent = `user@b22:${getPathStr()}$ `;
+      prompt.textContent = `user@b22:/${currentPath.join('/')}$ `;
     }
 
-    function addOutput(text, inputText) {
-      const cmd = document.createElement('div');
-      cmd.innerHTML = `<span class="prompt">${prompt.textContent}</span><span class="command">${inputText}</span>`;
-      historyDiv.appendChild(cmd);
-      if (text) {
-        const out = document.createElement('div');
-        out.className = 'output';
-        out.textContent = text;
-        historyDiv.appendChild(out);
+    function addToHistory(command, output) {
+      const cmdDiv = document.createElement('div');
+      cmdDiv.innerHTML = `<span class="prompt">${prompt.textContent}</span><span class="command">${command}</span>`;
+      historyDiv.appendChild(cmdDiv);
+      if (output) {
+        const outDiv = document.createElement('div');
+        outDiv.className = 'output';
+        outDiv.innerHTML = output;
+        historyDiv.appendChild(outDiv);
       }
       window.scrollTo(0, document.body.scrollHeight);
     }
 
-    input.addEventListener('keydown', (e) => {
+    input.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
-        const cmd = input.value.trim();
-        if (cmd) {
-          history.push(cmd);
-          historyIndex = history.length;
-          const result = execute(cmd);
-          addOutput(result, cmd);
+        const command = input.value.trim();
+        if (command) {
+          commandHistory.push(command);
+          historyIndex = commandHistory.length;
+          const output = executeCommand(command);
+          addToHistory(command, output);
           input.value = '';
-          updatePrompt();
         }
       } else if (e.key === 'ArrowUp') {
         if (historyIndex > 0) {
-          historyIndex--;
-          input.value = history[historyIndex];
+          input.value = commandHistory[--historyIndex];
         }
-        e.preventDefault();
       } else if (e.key === 'ArrowDown') {
-        if (historyIndex < history.length - 1) {
-          historyIndex++;
-          input.value = history[historyIndex];
+        if (historyIndex < commandHistory.length - 1) {
+          input.value = commandHistory[++historyIndex];
         } else {
-          historyIndex = history.length;
           input.value = '';
+          historyIndex = commandHistory.length;
         }
-        e.preventDefault();
       }
     });
 
     document.addEventListener('click', () => input.focus());
+    updatePrompt();
   </script>
 </body>
 </html>
