@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>b22terminal</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            margin: 0;
+            line-height: 1.5;
+        }
+        
+        #terminal {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .prompt {
+            color: #4CAF50;
+        }
+        
+        .command {
+            color: #64B5F6;
+        }
+        
+        .output {
+            margin-bottom: 15px;
+            white-space: pre-wrap;
+        }
+        
+        #input-line {
+            display: flex;
+        }
+        
+        #command-input {
+            background: transparent;
+            border: none;
+            color: #f0f0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            width: 100%;
+            outline: none;
+        }
+        
+        .file {
+            color: #FFD54F;
+        }
+        
+        .dir {
+            color: #4FC3F7;
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal">
+        <div class="output">
+use 'help' if needed
+        </div>
+        
+        <div id="history"></div>
+        
+        <div id="input-line">
+            <span class="prompt">deus@machina:~$ </span>
+            <input type="text" id="command-input" autofocus>
+        </div>
+    </div>
+
+    <script>
+        // Structure du site
+        const fileSystem = {
+            '~': {
+                'about.txt': 'Je suis un développeur passionné par les technologies web et les systèmes Unix.',
+                'projects': {
+                    'site-terminal.html': 'Le code source de ce site terminal',
+                    'autres-projets.txt': 'Divers projets en développement'
+                },
+                'contact.txt': 'Email: contact@example.com\nTwitter: @monhandle'
+            }
+        };
+
+        // État courant
+        let currentPath = ['~'];
+        let commandHistory = [];
+        let historyIndex = 0;
+
+        // Éléments DOM
+        const commandInput = document.getElementById('command-input');
+        const historyDiv = document.getElementById('history');
+
+        // Commandes disponibles
+        const commands = {
+            'help': {
+                description: 'Affiche cette aide',
+                execute: () => {
+                    let helpText = 'Commandes disponibles:\n';
+                    for (const cmd in commands) {
+                        helpText += `  ${cmd} - ${commands[cmd].description}\n`;
+                    }
+                    return helpText;
+                }
+            },
+            'ls': {
+                description: 'Liste les fichiers et répertoires',
+                execute: (args) => {
+                    const dir = navigateToPath(args[0] || '');
+                    if (typeof dir === 'string') return dir;
+                    
+                    let output = '';
+                    for (const item in dir) {
+                        const type = typeof dir[item] === 'object' ? 'dir' : 'file';
+                        output += `<span class="${type}">${item}</span>  `;
+                    }
+                    return output;
+                }
+            },
+            'cd': {
+                description: 'Change de répertoire',
+                execute: (args) => {
+                    if (!args[0]) {
+                        currentPath = ['~'];
+                        return '';
+                    }
+                    
+                    const newPath = args[0] === '..' 
+                        ? currentPath.slice(0, -1) 
+                        : [...currentPath, args[0]];
+                    
+                    const dir = navigateToPath(newPath.join('/'));
+                    if (typeof dir === 'string') return dir;
+                    
+                    currentPath = newPath;
+                    return '';
+                }
+            },
+            'cat': {
+                description: 'Affiche le contenu d\'un fichier',
+                execute: (args) => {
+                    if (!args[0]) return 'Usage: cat <fichier>';
+                    
+                    const pathParts = args[0].split('/');
+                    const fileName = pathParts.pop();
+                    const dirPath = pathParts.join('/');
+                    
+                    const dir = navigateToPath(dirPath || '.');
+                    if (typeof dir === 'string') return dir;
+                    
+                    if (!dir[fileName]) return `cat: ${args[0]}: Fichier non trouvé`;
+                    if (typeof dir[fileName] === 'object') return `cat: ${args[0]}: Est un répertoire`;
+                    
+                    return dir[fileName];
+                }
+            },
+            'clear': {
+                description: 'Efface l\'écran',
+                execute: () => {
+                    historyDiv.innerHTML = '';
+                    return '';
+                }
+            }
+        };
+
+        // Navigation dans le système de fichiers
+        function navigateToPath(path) {
+            let dir = fileSystem;
+            const pathParts = path ? path.split('/') : [];
+            
+            for (let part of pathParts) {
+                if (part === '' || part === '.') continue;
+                if (part === '~') {
+                    dir = fileSystem['~'];
+                    continue;
+                }
+                
+                if (!dir[part]) return `chemin: ${path}: Répertoire non trouvé`;
+                if (typeof dir[part] !== 'object') return `chemin: ${path}: N'est pas un répertoire`;
+                
+                dir = dir[part];
+            }
+            
+            return dir;
+        }
+
+        // Gestion des commandes
+        function executeCommand(cmd) {
+            const parts = cmd.split(' ');
+            const command = parts[0];
+            const args = parts.slice(1);
+            
+            if (!commands[command]) {
+                return `${command}: commande non trouvée. Tapez 'help' pour la liste des commandes.`;
+            }
+            
+            return commands[command].execute(args);
+        }
+
+        // Affichage dans le terminal
+        function printCommand(cmd) {
+            const prompt = document.createElement('div');
+            prompt.innerHTML = `<span class="prompt">visiteur@site:${currentPath.join('/')}$ </span><span class="command">${cmd}</span>`;
+            historyDiv.appendChild(prompt);
+        }
+
+        function printOutput(output) {
+            if (!output) return;
+            
+            const outputDiv = document.createElement('div');
+            outputDiv.className = 'output';
+            outputDiv.innerHTML = output;
+            historyDiv.appendChild(outputDiv);
+        }
+
+        // Gestion des événements
+        commandInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const cmd = commandInput.value.trim();
+                if (cmd) {
+                    commandHistory.push(cmd);
+                    historyIndex = commandHistory.length;
+                    
+                    printCommand(cmd);
+                    const output = executeCommand(cmd);
+                    printOutput(output);
+                    
+                    commandInput.value = '';
+                    
+                    // Faire défiler vers le bas
+                    window.scrollTo(0, document.body.scrollHeight);
+                }
+            } else if (e.key === 'ArrowUp') {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    commandInput.value = commandHistory[historyIndex];
+                }
+                e.preventDefault();
+            } else if (e.key === 'ArrowDown') {
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    commandInput.value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = commandHistory.length;
+                    commandInput.value = '';
+                }
+                e.preventDefault();
+            }
+        });
+
+        // Focus sur l'input
+        document.addEventListener('click', () => {
+            commandInput.focus();
+        });
+    </script>
+</body>
+</html>
