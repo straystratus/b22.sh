@@ -54,39 +54,19 @@
             color: #4FC3F7;
         }
         
-        .exe {
-            color: #FF5252;
-        }
-        
-        .config {
-            color: #9C27B0;
-        }
-        
-        .md {
-            color: #00BCD4;
-        }
-        
         .dir::before {
-            content: "📁 ";
+            content: "directory";
         }
         
         .file::before {
-            content: "📄 ";
-        }
-        
-        .md::before {
-            content: "📝 ";
-        }
-        
-        .config::before {
-            content: "⚙️ ";
+            content: "file";
         }
     </style>
 </head>
 <body>
     <div id="terminal">
         <div class="output">
-use 'help' if needed
+type 'help' for available commands.
         </div>
         
         <div id="history"></div>
@@ -98,43 +78,21 @@ use 'help' if needed
     </div>
 
     <script>
-        // File system structure
+        // File system structure matching your screenshot
         const fileSystem = {
             '~': {
-                'about.txt': 'I am a developer passionate about web technologies and Unix systems.',
-                'skills.txt': 'JavaScript, Python, Linux, Docker, React',
+                'aboutme': {
+                    'contacts': 'Email: contact@b22.dev\nGitHub: @b22terminal',
+                    'me': 'I am a developer passionate about creating terminal interfaces.',
+                    'readings': 'Current reading list:\n- Clean Code\n- The Pragmatic Programmer'
+                },
                 'projects': {
-                    'terminal-website.html': 'The source code for this terminal website',
-                    'web-apps': {
-                        'ecommerce.md': 'E-commerce platform with React',
-                        'dashboard.html': 'Admin dashboard project'
-                    },
-                    'games': {
-                        'chess.js': 'JavaScript chess engine',
-                        'platformer': {
-                            'main.py': 'Python platformer game',
-                            'assets.txt': 'Game assets list'
-                        }
-                    }
-                },
-                'contact.txt': 'Email: contact@b22.dev\nGitHub: @b22terminal',
-                'journal.md': `# Development Log
-## 2023-10-15
-- Added virtual file system
-- Implemented core commands
-
-## 2023-10-16
-- Improved UI/UX
-- Fixed navigation bugs`,
-                'config': {
-                    'settings.json': '{"theme":"dark","font":"monospace"}',
-                    'keys.txt': 'API keys and configurations'
-                },
-                'system': {
-                    'info.txt': 'B22Terminal v1.0\nLast updated: 2023-10-16',
-                    'bin': {
-                        'cli-tool.js': 'Command line utility'
-                    }
+                    'p1': 'Project 1: Terminal emulator',
+                    'p2': 'Project 2: Web-based filesystem',
+                    'p3': 'Project 3: CLI tools collection',
+                    'p4': 'Project 4: Documentation generator',
+                    'p5': 'Project 5: Automation scripts',
+                    'p6': 'Project 6: Experimental prototypes'
                 }
             }
         };
@@ -155,7 +113,7 @@ use 'help' if needed
                 execute: () => {
                     let helpText = 'Available commands:\n';
                     for (const cmd in commands) {
-                        helpText += `  ${cmd.padEnd(10)} - ${commands[cmd].description}\n`;
+                        helpText += `  ${cmd.padEnd(8)} - ${commands[cmd].description}\n`;
                     }
                     return helpText;
                 }
@@ -167,7 +125,7 @@ use 'help' if needed
                     if (typeof dir === 'string') return dir;
                     
                     let output = '';
-                    // Sort directories first, then files
+                    // Sort directories first
                     const items = Object.keys(dir).sort((a, b) => {
                         const aIsDir = typeof dir[a] === 'object';
                         const bIsDir = typeof dir[b] === 'object';
@@ -175,12 +133,7 @@ use 'help' if needed
                     });
                     
                     items.forEach(item => {
-                        let type = 'file';
-                        if (typeof dir[item] === 'object') type = 'dir';
-                        else if (item.endsWith('.json')) type = 'config';
-                        else if (item.endsWith('.md')) type = 'md';
-                        else if (item.endsWith('.js')) type = 'exe';
-                        
+                        const type = typeof dir[item] === 'object' ? 'dir' : 'file';
                         output += `<span class="${type}">${item}</span>  `;
                     });
                     return output;
@@ -221,6 +174,30 @@ use 'help' if needed
                     if (typeof dir[fileName] === 'object') return `cat: ${args[0]}: Is a directory`;
                     
                     return dir[fileName];
+                }
+            },
+            'tree': {
+                description: 'Display directory tree',
+                execute: (args) => {
+                    const path = args[0] || currentPath.join('/');
+                    const dir = navigateToPath(path);
+                    if (typeof dir === 'string') return dir;
+                    
+                    let output = '';
+                    function buildTree(node, prefix = '') {
+                        const keys = Object.keys(node);
+                        keys.forEach((key, index) => {
+                            const isLast = index === keys.length - 1;
+                            output += prefix + (isLast ? '└── ' : '├── ') + key + '\n';
+                            if (typeof node[key] === 'object') {
+                                buildTree(node[key], prefix + (isLast ? '    ' : '│   '));
+                            }
+                        });
+                    }
+                    
+                    output += path + '\n';
+                    buildTree(dir);
+                    return output;
                 }
             },
             'clear': {
@@ -273,7 +250,7 @@ use 'help' if needed
         // Display in terminal
         function printCommand(cmd) {
             const prompt = document.createElement('div');
-            prompt.innerHTML = `<span class="prompt">deus@machina:${currentPath.join('/')}$ </span><span class="command">${cmd}</span>`;
+            prompt.innerHTML = `<span class="prompt">user@b22:${currentPath.join('/')}$ </span><span class="command">${cmd}</span>`;
             historyDiv.appendChild(prompt);
         }
 
@@ -318,13 +295,6 @@ use 'help' if needed
                     commandInput.value = '';
                 }
                 e.preventDefault();
-            } else if (e.key === 'Tab') {
-                e.preventDefault();
-                const input = commandInput.value;
-                const matches = Object.keys(commands).filter(cmd => cmd.startsWith(input));
-                if (matches.length === 1) {
-                    commandInput.value = matches[0] + ' ';
-                }
             }
         });
 
