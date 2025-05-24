@@ -1,307 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>b22.sh</title>
-    <style>
-        body {
-            background-color: #1a1a1a;
-            color: #f0f0f0;
-            font-family: 'Courier New', monospace;
-            padding: 20px;
-            margin: 0;
-            line-height: 1.5;
-        }
-        
-        #terminal {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        
-        .prompt {
-            color: #4CAF50;
-        }
-        
-        .command {
-            color: #64B5F6;
-        }
-        
-        .output {
-            margin-bottom: 15px;
-            white-space: pre-wrap;
-        }
-        
-        #input-line {
-            display: flex;
-        }
-        
-        #command-input {
-            background: transparent;
-            border: none;
-            color: #f0f0f0;
-            font-family: 'Courier New', monospace;
-            font-size: 16px;
-            width: 100%;
-            outline: none;
-        }
-        
-        .file {
-            color: #FFD54F;
-        }
-        
-        .dir {
-            color: #4FC3F7;
-        }
-        
-        .dir::before {
-            content: "directory";
-        }
-        
-        .file::before {
-            content: "file";
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>b22.sh</title>
+  <style>
+    body {
+      background-color: #1a1a1a;
+      color: #f0f0f0;
+      font-family: 'Courier New', monospace;
+      margin: 0;
+      padding: 20px;
+    }
+    #terminal {
+      max-width: 800px;
+      margin: auto;
+    }
+    .prompt {
+      color: #4CAF50;
+    }
+    .command {
+      color: #64B5F6;
+    }
+    .output {
+      white-space: pre-wrap;
+      margin-bottom: 10px;
+    }
+    #input-line {
+      display: flex;
+    }
+    #command-input {
+      background: transparent;
+      border: none;
+      color: #f0f0f0;
+      font-family: inherit;
+      font-size: 16px;
+      width: 100%;
+      outline: none;
+    }
+  </style>
 </head>
 <body>
-    <div id="terminal">
-        <div class="output">
-type 'help' for available commands.
-        </div>
-        
-        <div id="history"></div>
-        
-        <div id="input-line">
-            <span class="prompt">deus@machina:~$ </span>
-            <input type="text" id="command-input" autofocus>
-        </div>
+  <div id="terminal">
+    <div class="output">type 'help' for available commands.</div>
+    <div id="history"></div>
+    <div id="input-line">
+      <span class="prompt" id="prompt">user@b22:~$ </span>
+      <input type="text" id="command-input" autofocus>
     </div>
+  </div>
 
-    <script>
-        // File system structure matching your screenshot
-        const fileSystem = {
-            '~': {
-                'aboutme': {
-                    'contacts': 'Email: contact@b22.dev\nGitHub: @b22terminal',
-                    'me': 'I am a developer passionate about creating terminal interfaces.',
-                    'readings': 'Current reading list:\n- Clean Code\n- The Pragmatic Programmer'
-                },
-                'projects': {
-                    'p1': 'Project 1: Terminal emulator',
-                    'p2': 'Project 2: Web-based filesystem',
-                    'p3': 'Project 3: CLI tools collection',
-                    'p4': 'Project 4: Documentation generator',
-                    'p5': 'Project 5: Automation scripts',
-                    'p6': 'Project 6: Experimental prototypes'
-                }
-            }
-        };
+  <script>
+    const fs = {
+      'aboutme': {
+        'contacts': 'Email: contact@b22.dev\nGitHub: @b22terminal',
+        'me': 'I am a developer passionate about creating terminal interfaces.',
+        'readings': 'Current reading list:\n- Clean Code\n- The Pragmatic Programmer'
+      },
+      'projects': {
+        'p1': 'Project 1: Terminal emulator',
+        'p2': 'Project 2: Web-based filesystem',
+        'p3': 'Project 3: CLI tools collection',
+        'p4': 'Project 4: Documentation generator',
+        'p5': 'Project 5: Automation scripts',
+        'p6': 'Project 6: Experimental prototypes'
+      }
+    };
 
-        // Current state
-        let currentPath = ['~'];
-        let commandHistory = [];
-        let historyIndex = 0;
+    let path = ['~'];
+    let history = [];
+    let historyIndex = 0;
 
-        // DOM elements
-        const commandInput = document.getElementById('command-input');
-        const historyDiv = document.getElementById('history');
+    const prompt = document.getElementById('prompt');
+    const input = document.getElementById('command-input');
+    const historyDiv = document.getElementById('history');
 
-        // Available commands
-        const commands = {
-            'help': {
-                description: 'Show this help message',
-                execute: () => {
-                    let helpText = 'Available commands:\n';
-                    for (const cmd in commands) {
-                        helpText += `  ${cmd.padEnd(8)} - ${commands[cmd].description}\n`;
-                    }
-                    return helpText;
-                }
-            },
-            'ls': {
-                description: 'List directory contents',
-                execute: (args) => {
-                    const dir = navigateToPath(args[0] || '');
-                    if (typeof dir === 'string') return dir;
-                    
-                    let output = '';
-                    // Sort directories first
-                    const items = Object.keys(dir).sort((a, b) => {
-                        const aIsDir = typeof dir[a] === 'object';
-                        const bIsDir = typeof dir[b] === 'object';
-                        return bIsDir - aIsDir || a.localeCompare(b);
-                    });
-                    
-                    items.forEach(item => {
-                        const type = typeof dir[item] === 'object' ? 'dir' : 'file';
-                        output += `<span class="${type}">${item}</span>  `;
-                    });
-                    return output;
-                }
-            },
-            'cd': {
-                description: 'Change directory',
-                execute: (args) => {
-                    if (!args[0]) {
-                        currentPath = ['~'];
-                        return '';
-                    }
-                    
-                    const newPath = args[0] === '..' 
-                        ? currentPath.slice(0, -1) 
-                        : [...currentPath, args[0]];
-                    
-                    const dir = navigateToPath(newPath.join('/'));
-                    if (typeof dir === 'string') return dir;
-                    
-                    currentPath = newPath;
-                    return '';
-                }
-            },
-            'cat': {
-                description: 'Display file contents',
-                execute: (args) => {
-                    if (!args[0]) return 'Usage: cat <file>';
-                    
-                    const pathParts = args[0].split('/');
-                    const fileName = pathParts.pop();
-                    const dirPath = pathParts.join('/');
-                    
-                    const dir = navigateToPath(dirPath || '.');
-                    if (typeof dir === 'string') return dir;
-                    
-                    if (!dir[fileName]) return `cat: ${args[0]}: No such file`;
-                    if (typeof dir[fileName] === 'object') return `cat: ${args[0]}: Is a directory`;
-                    
-                    return dir[fileName];
-                }
-            },
-            'tree': {
-                description: 'Display directory tree',
-                execute: (args) => {
-                    const path = args[0] || currentPath.join('/');
-                    const dir = navigateToPath(path);
-                    if (typeof dir === 'string') return dir;
-                    
-                    let output = '';
-                    function buildTree(node, prefix = '') {
-                        const keys = Object.keys(node);
-                        keys.forEach((key, index) => {
-                            const isLast = index === keys.length - 1;
-                            output += prefix + (isLast ? '└── ' : '├── ') + key + '\n';
-                            if (typeof node[key] === 'object') {
-                                buildTree(node[key], prefix + (isLast ? '    ' : '│   '));
-                            }
-                        });
-                    }
-                    
-                    output += path + '\n';
-                    buildTree(dir);
-                    return output;
-                }
-            },
-            'clear': {
-                description: 'Clear the terminal',
-                execute: () => {
-                    historyDiv.innerHTML = '';
-                    return '';
-                }
-            },
-            'pwd': {
-                description: 'Print working directory',
-                execute: () => currentPath.join('/')
-            }
-        };
+    function getDir(ref = fs, p = path.slice(1)) {
+      for (let part of p) {
+        if (!(part in ref)) return null;
+        ref = ref[part];
+        if (typeof ref !== 'object') return null;
+      }
+      return ref;
+    }
 
-        // Navigate through file system
-        function navigateToPath(path) {
-            let dir = fileSystem;
-            const pathParts = path ? path.split('/') : [];
-            
-            for (let part of pathParts) {
-                if (part === '' || part === '.') continue;
-                if (part === '~') {
-                    dir = fileSystem['~'];
-                    continue;
-                }
-                
-                if (!dir[part]) return `path: ${path}: No such directory`;
-                if (typeof dir[part] !== 'object') return `path: ${path}: Not a directory`;
-                
-                dir = dir[part];
-            }
-            
-            return dir;
+    function getPathStr() {
+      return path.join('/').replace(/^~\/?/, '~/');
+    }
+
+    function ls() {
+      const dir = getDir();
+      if (!dir) return 'ls: failed to access directory';
+      return Object.keys(dir).join('  ');
+    }
+
+    function cd(args) {
+      if (!args[0] || args[0] === '~') {
+        path = ['~'];
+        return '';
+      }
+      const parts = args[0].split('/').filter(Boolean);
+      let newPath = [...path];
+      if (args[0].startsWith('/')) newPath = ['~'];
+
+      for (let part of parts) {
+        if (part === '.') continue;
+        if (part === '..') {
+          if (newPath.length > 1) newPath.pop();
+        } else {
+          const tmp = getDir(fs, newPath.slice(1));
+          if (!tmp || !(part in tmp) || typeof tmp[part] !== 'object')
+            return `cd: ${args[0]}: Not a directory`;
+          newPath.push(part);
         }
+      }
+      path = newPath;
+      return '';
+    }
 
-        // Execute commands
-        function executeCommand(cmd) {
-            const parts = cmd.split(' ');
-            const command = parts[0];
-            const args = parts.slice(1);
-            
-            if (!commands[command]) {
-                return `${command}: command not found. Type 'help' for available commands.`;
-            }
-            
-            return commands[command].execute(args);
+    function pwd() {
+      return getPathStr();
+    }
+
+    function cat(args) {
+      if (!args[0]) return 'cat: missing operand';
+      const parts = args[0].split('/');
+      const file = parts.pop();
+      const dir = getDir(fs, path.slice(1).concat(parts.filter(Boolean)));
+      if (!dir || !(file in dir)) return `cat: ${args[0]}: No such file`;
+      if (typeof dir[file] !== 'string') return `cat: ${args[0]}: Is a directory`;
+      return dir[file];
+    }
+
+    function tree(dir = getDir(), prefix = '') {
+      if (!dir) return 'tree: not a directory';
+      let output = '';
+      const keys = Object.keys(dir);
+      keys.forEach((key, i) => {
+        const isLast = i === keys.length - 1;
+        output += `${prefix}${isLast ? '└── ' : '├── '}${key}\n`;
+        if (typeof dir[key] === 'object') {
+          output += tree(dir[key], prefix + (isLast ? '    ' : '│   '));
         }
+      });
+      return output;
+    }
 
-        // Display in terminal
-        function printCommand(cmd) {
-            const prompt = document.createElement('div');
-            prompt.innerHTML = `<span class="prompt">user@b22:${currentPath.join('/')}$ </span><span class="command">${cmd}</span>`;
-            historyDiv.appendChild(prompt);
+    function help() {
+      return `Available commands:
+  ls      - list files
+  cd      - change directory
+  pwd     - show current path
+  tree    - display directory tree
+  cat     - read file
+  clear   - clear screen
+  help    - show help`;
+    }
+
+    function clear() {
+      historyDiv.innerHTML = '';
+      return '';
+    }
+
+    const commands = { ls, cd, pwd, tree, cat, help, clear };
+
+    function execute(cmd) {
+      const parts = cmd.trim().split(/\s+/);
+      const base = parts[0];
+      const args = parts.slice(1);
+      if (base in commands) return commands[base](args);
+      return `${base}: command not found`;
+    }
+
+    function updatePrompt() {
+      prompt.textContent = `user@b22:${getPathStr()}$ `;
+    }
+
+    function addOutput(text, inputText) {
+      const cmd = document.createElement('div');
+      cmd.innerHTML = `<span class="prompt">${prompt.textContent}</span><span class="command">${inputText}</span>`;
+      historyDiv.appendChild(cmd);
+      if (text) {
+        const out = document.createElement('div');
+        out.className = 'output';
+        out.textContent = text;
+        historyDiv.appendChild(out);
+      }
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const cmd = input.value.trim();
+        if (cmd) {
+          history.push(cmd);
+          historyIndex = history.length;
+          const result = execute(cmd);
+          addOutput(result, cmd);
+          input.value = '';
+          updatePrompt();
         }
-
-        function printOutput(output) {
-            if (!output) return;
-            
-            const outputDiv = document.createElement('div');
-            outputDiv.className = 'output';
-            outputDiv.innerHTML = output;
-            historyDiv.appendChild(outputDiv);
+      } else if (e.key === 'ArrowUp') {
+        if (historyIndex > 0) {
+          historyIndex--;
+          input.value = history[historyIndex];
         }
+        e.preventDefault();
+      } else if (e.key === 'ArrowDown') {
+        if (historyIndex < history.length - 1) {
+          historyIndex++;
+          input.value = history[historyIndex];
+        } else {
+          historyIndex = history.length;
+          input.value = '';
+        }
+        e.preventDefault();
+      }
+    });
 
-        // Event handling
-        commandInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const cmd = commandInput.value.trim();
-                if (cmd) {
-                    commandHistory.push(cmd);
-                    historyIndex = commandHistory.length;
-                    
-                    printCommand(cmd);
-                    const output = executeCommand(cmd);
-                    printOutput(output);
-                    
-                    commandInput.value = '';
-                    
-                    // Scroll to bottom
-                    window.scrollTo(0, document.body.scrollHeight);
-                }
-            } else if (e.key === 'ArrowUp') {
-                if (historyIndex > 0) {
-                    historyIndex--;
-                    commandInput.value = commandHistory[historyIndex];
-                }
-                e.preventDefault();
-            } else if (e.key === 'ArrowDown') {
-                if (historyIndex < commandHistory.length - 1) {
-                    historyIndex++;
-                    commandInput.value = commandHistory[historyIndex];
-                } else {
-                    historyIndex = commandHistory.length;
-                    commandInput.value = '';
-                }
-                e.preventDefault();
-            }
-        });
-
-        // Focus on input
-        document.addEventListener('click', () => {
-            commandInput.focus();
-        });
-    </script>
+    document.addEventListener('click', () => input.focus());
+  </script>
 </body>
 </html>
+
