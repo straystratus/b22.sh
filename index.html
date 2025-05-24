@@ -253,7 +253,11 @@ Type 'help' for available commands.</div>
           commandHistory.push(command);
           historyIndex = commandHistory.length;
           const output = executeCommand(command);
-          addToHistory(command, output);
+	  if (command !== 'clear') {
+            addToHistory(command, output);
+	  } else {
+	    clearScreen();
+	  }
           input.value = '';
         }
       } else if (e.key === 'ArrowUp') {
