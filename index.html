@@ -6,7 +6,7 @@
   <title>b22.sh</title>
   <style>
     body {
-      background-color: #000000;
+      background: #000;
       color: #87CEEB;
       font-family: 'Courier New', monospace;
       margin: 0;
@@ -23,16 +23,12 @@
     }
     #history-container {
       overflow-y: auto;
-      flex-grow: 1;
+      flex: 1;
       display: flex;
       flex-direction: column-reverse;
     }
-    .prompt {
-      color: #00BFFF;
-    }
-    .command {
-      color: #87CEEB;
-    }
+    .prompt { color: #00BFFF; }
+    .command { color: #87CEEB; }
     .output {
       white-space: pre-wrap;
       margin-bottom: 10px;
@@ -55,17 +51,9 @@
       padding: 0;
       flex: 1;
     }
-    .dir {
-      color: #87CEEB;
-    }
-    .file {
-      color: #B0E0E6;
-    }
-    a {
-      color: #00BFFF;
-      text-decoration: underline;
-      cursor: pointer;
-    }
+    .dir { color: #87CEEB; }
+    .file { color: #B0E0E6; }
+    a { color: #00BFFF; text-decoration: underline; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -79,39 +67,31 @@
       <input type="text" id="command-input" autofocus autocomplete="off" spellcheck="false">
     </div>
   </div>
-
   <script>
-    function linkify(text) {
-      return text.replace(/(https?:\/\/[^\s]+)|(GitHub: @[^\s]+)/g, function(match) {
-        if (match.startsWith('http')) {
-          return `<a href="${match}" target="_blank">${match}</a>`;
-        } else if (match.startsWith('GitHub')) {
-          return `GitHub: <a href="https://github.com/straystratus" target="_blank">@straystratus</a>`;
-        }
-        return match;
-      });
-    }
-
+    // Filesystem mockup
     const fs = {
-      'aboutme': {
-        'contacts': 'Email: <a href="mailto:straystratus@gmail.com">all set</a>\nGitHub: <a href="https://github.com/straystratus" target="_blank">@straystratus</a>\nX: <a href="https://x.com/stratustm" target="_blank">@stratustm</a>',
-        'stratus': 'hey ! im actively working on zksnarks, blockchain developement and C, of course.\ni like birds and tea, a lot.',
-        'readings':
+      aboutme: {
+        contacts:
+          `<a href="mailto:straystratus@gmail.com">email</a>\n` +
+          `<a href="https://github.com/straystratus">github</a>\n` +
+          `<a href="https://x.com/stratustm">twitter</a>`,
+        stratus: "hey ! im actively working on zksnarks, blockchain developement and C, of course.\ni like birds and tea, a lot.",
+        readings:
           `- <a href="http://www.catb.org/esr/faqs/hacker-howto.html#hacker_already" target="_blank">How To Become A Hacker</a>\n` +
           `- <a href="https://www.feynmanlectures.caltech.edu/" target="_blank">The Feynman Lectures on Physics</a>\n` +
-          `- <a href="https://people.freebsd.org/~lstewart/articles/cpumemory.pdf" target="_blank">cpumemory</a>\n` +
+          `- <a href="https://people.freebsd.org/~lstewart/articles/cpumemory.pdf" target="_blank">What Every Programmer Should Know About Memory</a>\n` +
           `- <a href="https://oceanofpdf.com/authors/lukas-hozda/pdf-building-bitcoin-in-rust-download/" target="_blank">Building Bitcoin in Rust</a>`
       },
-      'projects': {
-        'stdex': 'my own decentralized exchange\n<a href="https://github.com/straystratus/stdex" target="_blank">check</a>',
-        'shiro': 'no comments',
-        'manifesto': 'photon extension, see (buys/sells)/wallet\n<a href="https://github.com/straystratus/manifesto" target="_blank">check</a>',
-        'gravitas': 'no comments',
-        'fyf': 'no comments'
+      projects: {
+        stdex: 'my own decentralized exchange\n<a href="https://github.com/straystratus/stdex" target="_blank">check</a>',
+        shiro: 'no comments',
+        manifesto: 'photon extension, see (buys/sells)/wallet\n<a href="https://github.com/straystratus/manifesto" target="_blank">check</a>',
+        gravitas: 'no comments',
+        fyf: 'no comments'
       },
-      'docs': {
-        'readme': '# b22 terminal\n\nweb-based terminal emulator',
-        'changelog': '# changelog\n\nv1.0 - Initial release'
+      docs: {
+        readme: '# b22 terminal\n\nweb-based terminal emulator',
+        changelog: '# changelog\n\nv1.0 - Initial release'
       }
     };
 
@@ -125,56 +105,46 @@
     const historyContainer = document.getElementById('history-container');
 
     function getCurrentDir() {
-      let dir = fs;
-      for (let segment of currentPath) {
-        if (dir[segment] && typeof dir[segment] === 'object') {
-          dir = dir[segment];
-        } else {
-          return null;
-        }
-      }
-      return dir;
+      return currentPath.reduce(
+        (dir, segment) => (dir && typeof dir[segment] === "object" ? dir[segment] : null), fs
+      );
     }
 
-    function resolvePath(inputPath) {
-      if (!inputPath) return [...currentPath];
-      const isAbsolute = inputPath.startsWith('/');
-      const base = isAbsolute ? [] : [...currentPath];
-      const segments = inputPath.split('/').filter(Boolean);
-      for (let segment of segments) {
-        if (segment === '.') continue;
-        if (segment === '..') {
-          base.pop();
-        } else {
-          base.push(segment);
-        }
+    function resolvePath(pathStr = "") {
+      const segments = pathStr.split('/').filter(Boolean);
+      let base = pathStr.startsWith('/') ? [] : [...currentPath];
+      for (const seg of segments) {
+        if (seg === '.') continue;
+        if (seg === '..') base.pop();
+        else base.push(seg);
       }
       return base;
     }
 
-    function listDirectory(args = []) {
-      const path = resolvePath(args[0]);
+    function listDirectory([dirArg]) {
+      const path = resolvePath(dirArg || "");
       let dir = fs;
-      for (let segment of path) {
-        if (!dir[segment]) return `ls: cannot access '${args[0]}': No such file or directory`;
+      for (const segment of path) {
+        if (!dir[segment]) return `ls: cannot access '${dirArg}': No such file or directory`;
         dir = dir[segment];
       }
       if (typeof dir !== 'object') return `ls: not a directory`;
-      return Object.keys(dir).map(k => `<span class="${typeof dir[k] === 'object' ? 'dir' : 'file'}">${k}</span>`).join('  ');
+      return Object.entries(dir).map(([k, v]) =>
+        `<span class="${typeof v === 'object' ? 'dir' : 'file'}">${k}</span>`
+      ).join('  ');
     }
 
-    function changeDirectory(args) {
-      if (args.length === 0) {
+    function changeDirectory([dirArg]) {
+      if (!dirArg) {
         currentPath = [];
         updatePrompt();
         return '';
       }
-      const path = resolvePath(args[0]);
+      const path = resolvePath(dirArg);
       let dir = fs;
-      for (let segment of path) {
-        if (!dir[segment] || typeof dir[segment] !== 'object') {
-          return `cd: ${args[0]}: Not a directory`;
-        }
+      for (const segment of path) {
+        if (!dir[segment] || typeof dir[segment] !== 'object')
+          return `cd: ${dirArg}: Not a directory`;
         dir = dir[segment];
       }
       currentPath = path;
@@ -186,21 +156,18 @@
       return '/' + currentPath.join('/');
     }
 
-    function readFile(args) {
-      if (args.length === 0) return 'cat: missing file operand';
-      const parts = resolvePath(args[0]);
+    function readFile([filePath]) {
+      if (!filePath) return 'cat: missing file operand';
+      const parts = resolvePath(filePath);
       const file = parts.pop();
       let dir = fs;
-      for (let segment of parts) {
-        if (!dir[segment]) return `cat: ${args[0]}: No such file or directory`;
+      for (const segment of parts) {
+        if (!dir[segment]) return `cat: ${filePath}: No such file or directory`;
         dir = dir[segment];
       }
-      if (!dir[file]) return `cat: ${args[0]}: No such file or directory`;
-      if (typeof dir[file] === 'object') return `cat: ${args[0]}: Is a directory`;
-      if (file === 'readings') {
-        return dir[file];
-      }
-      return linkify(dir[file]);
+      if (!dir[file]) return `cat: ${filePath}: No such file or directory`;
+      if (typeof dir[file] === 'object') return `cat: ${filePath}: Is a directory`;
+      return dir[file];
     }
 
     function displayTree() {
@@ -221,13 +188,13 @@
 
     function showHelp() {
       return `Available commands:
-  ls [dir]    - list directory contents
-  cd [dir]    - change directory
-  pwd         - print working directory
-  cat <file>  - display file contents
-  tree        - show directory tree
-  clear       - clear terminal
-  help        - show this help`;
+ls [dir]    - list directory contents
+cd [dir]    - change directory
+pwd         - print working directory
+cat <file>        - display file contents
+tree        - show directory tree
+clear       - clear terminal
+help        - show this help`;
     }
 
     function clearScreen() {
@@ -250,11 +217,8 @@
       if (!trimmed) return '';
       const [cmd, ...args] = trimmed.split(/\s+/);
       if (commands[cmd]) {
-        try {
-          return commands[cmd](args);
-        } catch {
-          return `${cmd}: error executing command`;
-        }
+        try { return commands[cmd](args); }
+        catch { return `${cmd}: error executing command`; }
       }
       return `${cmd}: command not found`;
     }
@@ -283,41 +247,23 @@
           commandHistory.push(command);
           historyIndex = commandHistory.length;
           const output = executeCommand(command);
-          if (command !== 'clear') {
-            addToHistory(command, output);
-          } else {
-            clearScreen();
-          }
+          if (command !== 'clear') addToHistory(command, output);
+          else clearScreen();
           input.value = '';
         }
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        if (historyIndex > 0) {
-          historyIndex--;
-          input.value = commandHistory[historyIndex];
-        }
+        if (historyIndex > 0) input.value = commandHistory[--historyIndex];
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        if (historyIndex < commandHistory.length - 1) {
-          historyIndex++;
-          input.value = commandHistory[historyIndex];
-        } else {
-          historyIndex = commandHistory.length;
-          input.value = '';
-        }
+        if (historyIndex < commandHistory.length - 1) input.value = commandHistory[++historyIndex];
+        else { historyIndex = commandHistory.length; input.value = ''; }
       }
     });
 
-    document.addEventListener('click', function() {
-      input.focus();
-    });
-
-    window.addEventListener('load', function() {
-      input.focus();
-    });
-
+    document.addEventListener('click', () => input.focus());
+    window.addEventListener('load', () => input.focus());
     updatePrompt();
   </script>
 </body>
 </html>
-
