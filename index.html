@@ -86,7 +86,6 @@
         if (match.startsWith('http')) {
           return `<a href="${match}" target="_blank">${match}</a>`;
         } else if (match.startsWith('GitHub')) {
-          const username = match.split('@')[1];
           return `GitHub: <a href="https://github.com/straystratus" target="_blank">@straystratus</a>`;
         }
         return match;
@@ -95,20 +94,20 @@
 
     const fs = {
       'aboutme': {
-        'contacts': 'Email: <a href="mailto:straystratus@gmail.com">all set</a>\nGitHub: @straystratus\nX: @stratustm',
+        'contacts': 'Email: <a href="mailto:straystratus@gmail.com">all set</a>\nGitHub: <a href="https://github.com/straystratus" target="_blank">@straystratus</a>\nX: <a href="https://x.com/stratustm" target="_blank">@stratustm</a>',
         'stratus': 'hey ! im actively working on zksnarks, blockchain developement and C, of course.\ni like birds and tea, a lot.',
         'readings':
-	  `- <a href="http://www.catb.org/esr/faqs/hacker-howto.html#hacker_already" target="_blank">How To Become A Hacker</a>\n` +
-	  `- <a href="https://www.feynmanlectures.caltech.edu/" target="_blank">The Feynman Lectures on Physics</a>\n` +
-	  `- <a href="https://people.freebsd.org/~lstewart/articles/cpumemory.pdf" target="_blank">cpumemory</a>\n` +
-	  `- <a href="https://oceanofpdf.com/authors/lukas-hozda/pdf-building-bitcoin-in-rust-download/" target="_blank">Building Bitcoin in Rust</a>`
+          `- <a href="http://www.catb.org/esr/faqs/hacker-howto.html#hacker_already" target="_blank">How To Become A Hacker</a>\n` +
+          `- <a href="https://www.feynmanlectures.caltech.edu/" target="_blank">The Feynman Lectures on Physics</a>\n` +
+          `- <a href="https://people.freebsd.org/~lstewart/articles/cpumemory.pdf" target="_blank">cpumemory</a>\n` +
+          `- <a href="https://oceanofpdf.com/authors/lukas-hozda/pdf-building-bitcoin-in-rust-download/" target="_blank">Building Bitcoin in Rust</a>`
       },
       'projects': {
         'stdex': 'my own decentralized exchange\n<a href="https://github.com/straystratus/stdex" target="_blank">check</a>',
         'shiro': 'no comments',
         'manifesto': 'photon extension, see (buys/sells)/wallet\n<a href="https://github.com/straystratus/manifesto" target="_blank">check</a>',
         'gravitas': 'no comments',
-        'fyf': 'no comments',
+        'fyf': 'no comments'
       },
       'docs': {
         'readme': '# b22 terminal\n\nweb-based terminal emulator',
@@ -199,7 +198,7 @@
       if (!dir[file]) return `cat: ${args[0]}: No such file or directory`;
       if (typeof dir[file] === 'object') return `cat: ${args[0]}: Is a directory`;
       if (file === 'readings') {
-        return dir[file]; // pas de linkify pour éviter d'afficher l'URL
+        return dir[file];
       }
       return linkify(dir[file]);
     }
@@ -225,7 +224,7 @@
   ls [dir]    - list directory contents
   cd [dir]    - change directory
   pwd         - print working directory
-  cat <file>        - display file contents
+  cat <file>  - display file contents
   tree        - show directory tree
   clear       - clear terminal
   help        - show this help`;
