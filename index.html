@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>b22.sh</title>
-  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="icon" type="image/ico" href="favicon.ico">
   <style>
     body {
       background: #000;
@@ -52,7 +52,7 @@
       padding: 0;
       flex: 1;
     }
-    .dir { color: #87CEEB; }
+    .dir { color: #0f97cc; }
     .file { color: #B0E0E6; }
     a { color: #00BFFF; text-decoration: underline; cursor: pointer; }
   </style>
@@ -69,18 +69,18 @@
     </div>
   </div>
   <script>
-    // Filesystem mockup
     const fs = {
       aboutme: {
         contacts:
           `<a href="mailto:straystratus@gmail.com">email</a>\n` +
           `<a href="https://github.com/straystratus">github</a>\n` +
           `<a href="https://x.com/stratustm">twitter</a>`,
-        stratus: "hey ! im actively working on zksnarks, blockchain developement and C, of course.\ni like birds and tea, a lot.",
+        stratus: "hey ! im stratus. im actively working on zksnarks, ethereum developement and C, of course.\ni like birds and tea, a lot.",
         readings:
           `- <a href="http://www.catb.org/esr/faqs/hacker-howto.html#hacker_already" target="_blank">How To Become A Hacker</a>\n` +
           `- <a href="https://www.feynmanlectures.caltech.edu/" target="_blank">The Feynman Lectures on Physics</a>\n` +
           `- <a href="https://people.freebsd.org/~lstewart/articles/cpumemory.pdf" target="_blank">What Every Programmer Should Know About Memory</a>\n` +
+          `- <a href="https://web.mit.edu/6.001/6.037/sicp.pdf" target="_blank">SICP</a>\n` +
           `- <a href="https://oceanofpdf.com/authors/lukas-hozda/pdf-building-bitcoin-in-rust-download/" target="_blank">Building Bitcoin in Rust</a>`
       },
       projects: {
@@ -90,10 +90,14 @@
         gravitas: 'no comments',
         fyf: 'no comments'
       },
-      docs: {
-        readme: '# b22 terminal\n\nweb-based terminal emulator',
-        changelog: '# changelog\n\nv1.0 - Initial release'
-      }
+      resources: {
+        websites:
+          `- <a href="https://beej.us/guide/" target="_blank">Beej's Guides</a>\n` +
+          `- <a href="https://michaelneuder.github.io/index.html" target="_blank">Mike Neuder</a>\n` +
+          `- <a href="https://www.furidamu.org/" target="_blank">Julian Schrittwieser</a>\n` +
+          `- <a href="https://near.blog/" target="_blank">near.blog</a>\n` +
+          `- <a href="https://riemani.ca/" target="_blank">mani</a>\n`,
+      },
     };
 
     let currentPath = [];
