@@ -6,22 +6,30 @@
   <title>b22.sh</title>
   <style>
     body {
-      background-color: #1a1a1a;
-      color: #f0f0f0;
+      background-color: #000000;
+      color: #87CEEB;
       font-family: 'Courier New', monospace;
       margin: 0;
       padding: 20px;
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
     }
     #terminal {
       max-width: 800px;
       margin: auto;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    #history-container {
+      overflow-y: auto;
+      flex-grow: 1;
     }
     .prompt {
-      color: #4CAF50;
+      color: #00BFFF;
     }
     .command {
-      color: #64B5F6;
+      color: #87CEEB;
     }
     .output {
       white-space: pre-wrap;
@@ -31,11 +39,12 @@
     #input-line {
       display: flex;
       align-items: center;
+      flex-shrink: 0;
     }
     #command-input {
       background: transparent;
       border: none;
-      color: #f0f0f0;
+      color: #87CEEB;
       font-family: inherit;
       font-size: 16px;
       width: 100%;
@@ -45,18 +54,25 @@
       flex: 1;
     }
     .dir {
-      color: #4FC3F7;
+      color: #87CEEB;
     }
     .file {
-      color: #FFD54F;
+      color: #B0E0E6;
+    }
+    a {
+      color: #00BFFF;
+      text-decoration: underline;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <div id="terminal">
-    <div class="output">
+    <div id="history-container">
+      <div class="output">
 Type 'help' for available commands.</div>
-    <div id="history"></div>
+      <div id="history"></div>
+    </div>
     <div id="input-line">
       <span class="prompt" id="prompt">deus@machina:~$ </span>
       <input type="text" id="command-input" autofocus autocomplete="off" spellcheck="false">
@@ -64,11 +80,22 @@ Type 'help' for available commands.</div>
   </div>
 
   <script>
+    function linkify(text) {
+      return text.replace(/(https?:\/\/[^\s]+)|(GitHub: @[^\s]+)/g, function(match) {
+        if (match.startsWith('http')) {
+          return `<a href="${match}" target="_blank">${match}</a>`;
+        } else if (match.startsWith('GitHub')) {
+          const username = match.split('@')[1];
+          return `GitHub: <a href="https://github.com/straystratus" target="_blank">@straystratus</a>`;
+        return match;
+      });
+    }
+
     const fs = {
       'aboutme': {
-        'contacts.txt': 'Email: contact@b22.dev\nGitHub: @b22terminal\nLinkedIn: /in/b22dev',
-        'bio.md': '# About Me\n\nPassionate developer creating terminal interfaces.',
-        'readings.md': '## Reading List\n- Clean Code\n- The Pragmatic Programmer'
+        'contacts.txt': 'Email: stratus@b22.sh\nGitHub: @straystratus,
+        'bio.md': '# about me\n\nhey ! im actively working on zksnarks, blockchain developement and C, of course. i like tea, a lot.',
+        'readings.md': '## reading list\n- Clean Code\n- The Pragmatic Programmer'
       },
       'projects': {
         'p1': 'Terminal emulator project',
@@ -91,6 +118,7 @@ Type 'help' for available commands.</div>
     const prompt = document.getElementById('prompt');
     const input = document.getElementById('command-input');
     const historyDiv = document.getElementById('history');
+    const historyContainer = document.getElementById('history-container');
 
     function getCurrentDir() {
       let dir = fs;
@@ -172,7 +200,7 @@ Type 'help' for available commands.</div>
       }
       if (!dir[file]) return `cat: ${args[0]}: No such file or directory`;
       if (typeof dir[file] === 'object') return `cat: ${args[0]}: Is a directory`;
-      return dir[file];
+      return linkify(dir[file]); // Applique linkify aux contenus de fichiers
     }
 
     function displayTree() {
@@ -245,7 +273,7 @@ Type 'help' for available commands.</div>
         outDiv.innerHTML = output;
         historyDiv.appendChild(outDiv);
       }
-      window.scrollTo(0, document.body.scrollHeight);
+      historyContainer.scrollTop = historyContainer.scrollHeight;
     }
 
     input.addEventListener('keydown', e => {
@@ -261,7 +289,6 @@ Type 'help' for available commands.</div>
             clearScreen();
           }
           input.value = '';
-          // Recentrer le curseur après exécution
           setTimeout(() => {
             input.focus();
             input.selectionStart = input.selectionEnd = input.value.length;
@@ -271,7 +298,6 @@ Type 'help' for available commands.</div>
         e.preventDefault();
         if (historyIndex > 0) {
           input.value = commandHistory[--historyIndex];
-          // Positionner le curseur à la fin
           setTimeout(() => {
             input.selectionStart = input.selectionEnd = input.value.length;
           }, 0);
@@ -280,7 +306,6 @@ Type 'help' for available commands.</div>
         e.preventDefault();
         if (historyIndex < commandHistory.length - 1) {
           input.value = commandHistory[++historyIndex];
-          // Positionner le curseur à la fin
           setTimeout(() => {
             input.selectionStart = input.selectionEnd = input.value.length;
           }, 0);
@@ -293,13 +318,11 @@ Type 'help' for available commands.</div>
 
     document.addEventListener('click', () => {
       input.focus();
-      // Positionner le curseur à la fin lors d'un clic
       setTimeout(() => {
         input.selectionStart = input.selectionEnd = input.value.length;
       }, 0);
     });
 
-    // Positionnement initial du curseur
     window.addEventListener('load', () => {
       input.focus();
       setTimeout(() => {
