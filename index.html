@@ -139,11 +139,9 @@
 
     function resolvePath(inputPath) {
       if (!inputPath) return [...currentPath];
-
       const isAbsolute = inputPath.startsWith('/');
       const base = isAbsolute ? [] : [...currentPath];
       const segments = inputPath.split('/').filter(Boolean);
-
       for (let segment of segments) {
         if (segment === '.') continue;
         if (segment === '..') {
@@ -158,14 +156,11 @@
     function listDirectory(args = []) {
       const path = resolvePath(args[0]);
       let dir = fs;
-
       for (let segment of path) {
         if (!dir[segment]) return `ls: cannot access '${args[0]}': No such file or directory`;
         dir = dir[segment];
       }
-
       if (typeof dir !== 'object') return `ls: not a directory`;
-
       return Object.keys(dir).map(k => `<span class="${typeof dir[k] === 'object' ? 'dir' : 'file'}">${k}</span>`).join('  ');
     }
 
@@ -175,7 +170,6 @@
         updatePrompt();
         return '';
       }
-
       const path = resolvePath(args[0]);
       let dir = fs;
       for (let segment of path) {
@@ -184,7 +178,6 @@
         }
         dir = dir[segment];
       }
-
       currentPath = path;
       updatePrompt();
       return '';
@@ -205,6 +198,9 @@
       }
       if (!dir[file]) return `cat: ${args[0]}: No such file or directory`;
       if (typeof dir[file] === 'object') return `cat: ${args[0]}: Is a directory`;
+      if (file === 'readings') {
+        return dir[file]; // pas de linkify pour éviter d'afficher l'URL
+      }
       return linkify(dir[file]);
     }
 
@@ -325,3 +321,4 @@
   </script>
 </body>
 </html>
+
