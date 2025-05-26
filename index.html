@@ -208,6 +208,27 @@ help        - show this help`;
       return '';
     }
 
+    function printAsciiLetterByLetter(ascii, callback) {
+      const historyDiv = document.getElementById('history');
+      let i = 0;
+      let outputDiv = document.createElement('div');
+      outputDiv.className = 'output';
+      outputDiv.style.whiteSpace = 'pre';
+      historyDiv.appendChild(outputDiv);
+
+      function printNext() {
+        if (i < ascii.length) {
+          outputDiv.textContent += ascii[i];
+          i++;
+          setTimeout(printNext, 7); // vitesse (en ms), ajuste pour + rapide/lent
+        } else if (callback) {
+          callback();
+        }
+        historyDiv.scrollTop = historyDiv.scrollHeight;
+      }
+    printNext();
+    }
+
     const commands = {
       ls: listDirectory,
       cd: changeDirectory,
@@ -215,13 +236,31 @@ help        - show this help`;
       cat: readFile,
       tree: displayTree,
       help: showHelp,
-      clear: clearScreen
+      clear: clearScreen,
+      b22: () => {
+        return null;
+      }
     };
 
     function executeCommand(line) {
       const trimmed = line.trim();
       if (!trimmed) return '';
       const [cmd, ...args] = trimmed.split(/\s+/);
+      if (cmd === 'b22') {
+        const ascii = 
+      `       ░▒▓█▓▒         ░▒▓███████▓▒░  ░▒▓███████▓▒░  
+       ░▒▓█▓▒                ░▒▓█▓▒░        ░▒▓█▓▒░ 
+       ░▒▓█▓▒                ░▒▓█▓▒░        ░▒▓█▓▒░ 
+       ░▒▓███████▓▒░   ░▒▓██████▓▒░   ░▒▓██████▓▒░  
+       ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░        ░▒▓█▓▒░        
+       ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░        ░▒▓█▓▒░        
+       ░▒▓███████▓▒░  ░▒▓████████▓▒░ ░▒▓████████▓▒░`;
+
+        addToHistory(trimmed, '');
+        printAsciiLetterByLetter(ascii);
+        return '';
+      }
+
       if (commands[cmd]) {
         try { return commands[cmd](args); }
         catch { return `${cmd}: error executing command`; }
