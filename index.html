@@ -6,9 +6,16 @@
   <title>b22.sh</title>
   <link rel="icon" type="image/ico" href="favicon.ico">
   <style>
+    :root {
+      --bg: #000;
+      --fg: #87CEEB;
+      --prompt: #00BFFF;
+      --dir: #0f97cc;
+      --file: #B0E0E6;
+    }
     body {
-      background: #000;
-      color: #87CEEB;
+      background: var(--bg);
+      color: var(--fg);
       font-family: 'Courier New', monospace;
       margin: 0;
       padding: 20px;
@@ -28,8 +35,8 @@
       display: flex;
       flex-direction: column-reverse;
     }
-    .prompt { color: #00BFFF; }
-    .command { color: #87CEEB; }
+    .prompt { color: var(--prompt); }
+    .command { color: var(--fg); }
     .output {
       white-space: pre-wrap;
       margin-bottom: 10px;
@@ -43,7 +50,7 @@
     #command-input {
       background: transparent;
       border: none;
-      color: #87CEEB;
+      color: var(--fg);
       font-family: inherit;
       font-size: 16px;
       width: 100%;
@@ -52,9 +59,9 @@
       padding: 0;
       flex: 1;
     }
-    .dir { color: #0f97cc; }
-    .file { color: #B0E0E6; }
-    a { color: #00BFFF; text-decoration: underline; cursor: pointer; }
+    .dir { color: var(--dir); }
+    .file { color: var(--file); }
+    a { color: var(--prompt); text-decoration: underline; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -69,6 +76,46 @@
     </div>
   </div>
   <script>
+    const THEMES = {
+      default: {
+        '--bg': '#000',
+        '--fg': '#87CEEB',
+        '--prompt': '#00BFFF',
+        '--dir': '#0f97cc',
+        '--file': '#B0E0E6',
+      },
+      matrix: {
+        '--bg': '#111',
+        '--fg': '#39FF14',
+        '--prompt': '#0f0',
+        '--dir': '#29a329',
+        '--file': '#99ff99',
+      },
+      solarized: {
+        '--bg': '#002b36',
+        '--fg': '#93a1a1',
+        '--prompt': '#268bd2',
+        '--dir': '#2aa198',
+        '--file': '#b58900',
+      },
+      hacker: {
+        '--bg': '#181818',
+        '--fg': '#00ffb6',
+        '--prompt': '#ff00b6',
+        '--dir': '#ffb600',
+        '--file': '#00b6ff',
+      },
+    };
+    function setTheme(theme) {
+      if (!THEMES[theme]) return;
+      Object.entries(THEMES[theme]).forEach(([k, v]) => {
+        document.documentElement.style.setProperty(k, v);
+      });
+      localStorage.setItem('b22_theme', theme);
+    }
+    const savedTheme = localStorage.getItem('b22_theme') || 'default';
+    setTheme(savedTheme);
+
     const fs = {
       aboutme: {
         contacts:
@@ -102,8 +149,8 @@
     };
 
     let currentPath = [];
-    let commandHistory = [];
-    let historyIndex = -1;
+    let commandHistory = JSON.parse(localStorage.getItem('commandHistory') || '[]');
+    let historyIndex = commandHistory.length;
 
     const prompt = document.getElementById('prompt');
     const input = document.getElementById('command-input');
@@ -194,13 +241,14 @@
 
     function showHelp() {
       return `Available commands:
-ls [dir]    - list directory contents
-cd [dir]    - change directory
-pwd         - print working directory
-cat <file>        - display file contents
-tree        - show directory tree
-clear       - clear terminal
-help        - show this help`;
+ls [dir]     - list directory contents
+cd [dir]     - change directory
+pwd          - print working directory
+cat <file>         - display file contents
+tree         - show directory tree
+clear        - clear terminal
+help         - show this help
+theme [name] - change color theme (type 'theme' for list)`;
     }
 
     function clearScreen() {
@@ -220,13 +268,13 @@ help        - show this help`;
         if (i < ascii.length) {
           outputDiv.textContent += ascii[i];
           i++;
-          setTimeout(printNext, 7); // vitesse (en ms), ajuste pour + rapide/lent
+          setTimeout(printNext, 7);
         } else if (callback) {
           callback();
         }
-        historyDiv.scrollTop = historyDiv.scrollHeight;
+        historyDiv.scrollTop = historyContainer.scrollHeight;
       }
-    printNext();
+      printNext();
     }
 
     const commands = {
@@ -239,6 +287,17 @@ help        - show this help`;
       clear: clearScreen,
       b22: () => {
         return null;
+      },
+      theme: ([arg]) => {
+        if (!arg) {
+          return 'Available themes: ' + Object.keys(THEMES).join(', ') +
+            '\nUsage: theme [name]';
+        }
+        if (!THEMES[arg]) {
+          return `Unknown theme "${arg}". Try: ` + Object.keys(THEMES).join(', ');
+        }
+        setTheme(arg);
+        return `Theme set to "${arg}".`;
       }
     };
 
@@ -247,14 +306,14 @@ help        - show this help`;
       if (!trimmed) return '';
       const [cmd, ...args] = trimmed.split(/\s+/);
       if (cmd === 'b22') {
-        const ascii = 
-      `       ░▒▓█▓▒         ░▒▓███████▓▒░  ░▒▓███████▓▒░  
-       ░▒▓█▓▒                ░▒▓█▓▒░        ░▒▓█▓▒░ 
-       ░▒▓█▓▒                ░▒▓█▓▒░        ░▒▓█▓▒░ 
-       ░▒▓███████▓▒░   ░▒▓██████▓▒░   ░▒▓██████▓▒░  
-       ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░        ░▒▓█▓▒░        
-       ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░        ░▒▓█▓▒░        
-       ░▒▓███████▓▒░  ░▒▓████████▓▒░ ░▒▓████████▓▒░`;
+        const ascii =
+`░▒▓█▓▒         ░▒▓███████▓▒░  ░▒▓███████▓▒░  
+░▒▓█▓▒                ░▒▓█▓▒░        ░▒▓█▓▒░ 
+░▒▓█▓▒                ░▒▓█▓▒░        ░▒▓█▓▒░ 
+░▒▓███████▓▒░   ░▒▓██████▓▒░   ░▒▓██████▓▒░  
+░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░        ░▒▓█▓▒░        
+░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░        ░▒▓█▓▒░        
+░▒▓███████▓▒░  ░▒▓████████▓▒░ ░▒▓████████▓▒░`;
 
         addToHistory(trimmed, '');
         printAsciiLetterByLetter(ascii);
@@ -298,6 +357,7 @@ help        - show this help`;
         const command = input.value.trim();
         if (command) {
           commandHistory.push(command);
+          localStorage.setItem('commandHistory', JSON.stringify(commandHistory));
           historyIndex = commandHistory.length;
           const output = executeCommand(command);
           if (command !== 'clear') addToHistory(command, output);
@@ -370,6 +430,7 @@ help        - show this help`;
         }
       }
     });
+
     document.addEventListener('click', () => input.focus());
     window.addEventListener('load', () => input.focus());
     updatePrompt();
