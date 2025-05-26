@@ -321,7 +321,7 @@ music        - play some music !`;
         return (
           "Playlist:\n" +
           list +
-          "\n\nUtilise :\n- play [n] : play music\n- pause : pause\n- start : resume"
+          "\n\nUtilise :\n- play [n]\n- pause\n- resume"
         );
       },
       play: ([arg]) => {
@@ -344,7 +344,7 @@ music        - play some music !`;
         }
         return "No music currently.";
       },
-      start: () => {
+      resume: () => {
         if (audio && audio.paused) {
           audio.play();
           return "Musique resumed.";
