@@ -152,6 +152,20 @@
     let commandHistory = JSON.parse(localStorage.getItem('commandHistory') || '[]');
     let historyIndex = commandHistory.length;
 
+    const PLAYLIST = [
+      { name: "01", src: "music/01. Main Menu.mp3" },
+      { name: "02", src: "music/02. Theme Shop.mp3" },
+      { name: "03", src: "music/03. Friend List.mp3" },
+      { name: "04", src: "music/04. Menu 01 (Wii Music).mp3" },
+      { name: "05", src: "music/05. Nintendo 3DS Camera - Slideshow (Pop).mp3" },
+      { name: "06", src: "music/06. Credits (Wii Play Motion).mp3" },
+      { name: "07", src: "music/07. Nintendo 3DS Camera - Slideshow (Pop).mp3" },
+      { name: "08", src: "music/kaitenzushi.mp3" }
+    ];
+
+    let currentMusicIndex = null;
+    let audio = null;
+
     const prompt = document.getElementById('prompt');
     const input = document.getElementById('command-input');
     const historyDiv = document.getElementById('history');
@@ -248,7 +262,8 @@ cat <file>         - display file contents
 tree         - show directory tree
 clear        - clear terminal
 help         - show this help
-theme [name] - change color theme (type 'theme' for list)`;
+theme [name] - change color theme (type 'theme' for list)
+music        - play some music !`;
     }
 
     function clearScreen() {
@@ -298,7 +313,44 @@ theme [name] - change color theme (type 'theme' for list)`;
         }
         setTheme(arg);
         return `Theme set to "${arg}".`;
-      }
+      },
+      music: () => {
+        let list = PLAYLIST.map(
+          (track, i) => (currentMusicIndex === i && audio && !audio.paused ? "▶ " : "  ") + (i + 1) + ". " + track.name
+        ).join('\n');
+        return (
+          "Playlist:\n" +
+          list +
+          "\n\nUtilise :\n- play [n] : play music\n- pause : pause\n- start : resume"
+        );
+      },
+      play: ([arg]) => {
+        if (!arg || !/^\d+$/.test(arg)) return "use : play [n]";
+        let idx = parseInt(arg, 10) - 1;
+        if (idx < 0 || idx >= PLAYLIST.length) return "Music not valid.";
+        if (audio) {
+          audio.pause();
+          audio.currentTime = 0;
+        }
+        audio = new Audio(PLAYLIST[idx].src);
+        audio.play();
+        currentMusicIndex = idx;
+        return `Lecture : ${PLAYLIST[idx].name}`;
+      },
+      pause: () => {
+        if (audio && !audio.paused) {
+          audio.pause();
+          return "Music paused.";
+        }
+        return "No music currently.";
+      },
+      start: () => {
+        if (audio && audio.paused) {
+          audio.play();
+          return "Musique resumed.";
+        }
+        return "No music to resume.";
+      },
     };
 
     function executeCommand(line) {
