@@ -246,6 +246,14 @@ help        - show this help`;
       historyContainer.scrollTop = historyContainer.scrollHeight;
     }
 
+    let autocompleteState = {
+      fragment: '',
+      context: '',
+      matches: [],
+      index: 0,
+      lastValue: ''
+    };
+
     input.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         const command = input.value.trim();
@@ -257,16 +265,72 @@ help        - show this help`;
           else clearScreen();
           input.value = '';
         }
+        autocompleteState = { fragment: '', context: '', matches: [], index: 0, lastValue: '' }; // reset
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         if (historyIndex > 0) input.value = commandHistory[--historyIndex];
+        autocompleteState = { fragment: '', context: '', matches: [], index: 0, lastValue: '' };
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         if (historyIndex < commandHistory.length - 1) input.value = commandHistory[++historyIndex];
         else { historyIndex = commandHistory.length; input.value = ''; }
+        autocompleteState = { fragment: '', context: '', matches: [], index: 0, lastValue: '' };
+      }
+      else if (e.key === 'Tab') {
+        e.preventDefault();
+
+        const value = input.value;
+        const split = value.trim().split(/\s+/);
+
+        if (split.length === 1) {
+          const fragment = split[0];
+          if (!fragment) return;
+          if (
+            autocompleteState.context !== 'command' ||
+            autocompleteState.fragment !== fragment ||
+            autocompleteState.lastValue !== value
+          ) {
+            autocompleteState.context = 'command';
+            autocompleteState.fragment = fragment;
+            autocompleteState.matches = Object.keys(commands).filter(cmd => cmd.startsWith(fragment));
+            autocompleteState.index = 0;
+            autocompleteState.lastValue = value;
+          }
+          const matches = autocompleteState.matches;
+          if (matches.length === 0) return;
+          input.value = matches[autocompleteState.index] + ' ';
+          autocompleteState.index = (autocompleteState.index + 1) % matches.length;
+          autocompleteState.lastValue = input.value;
+        }
+        else if (split.length >= 2) {
+          const cmd = split[0];
+          if (cmd === 'cat') {
+            const partial = split[1];
+            let dir = getCurrentDir();
+            if (!dir) return;
+            const files = Object.entries(dir)
+              .filter(([k, v]) => typeof v !== 'object')
+              .map(([k, v]) => k);
+            if (
+              autocompleteState.context !== 'cat' ||
+              autocompleteState.fragment !== partial ||
+              autocompleteState.lastValue !== value
+            ) {
+              autocompleteState.context = 'cat';
+              autocompleteState.fragment = partial;
+              autocompleteState.matches = files.filter(f => f.startsWith(partial));
+              autocompleteState.index = 0;
+              autocompleteState.lastValue = value;
+            }
+            const matches = autocompleteState.matches;
+            if (matches.length === 0) return;
+            input.value = cmd + ' ' + matches[autocompleteState.index];
+            autocompleteState.index = (autocompleteState.index + 1) % matches.length;
+            autocompleteState.lastValue = input.value;
+          }
+        }
       }
     });
-
     document.addEventListener('click', () => input.focus());
     window.addEventListener('load', () => input.focus());
     updatePrompt();
