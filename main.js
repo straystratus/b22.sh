@@ -38,7 +38,6 @@ function setTheme(theme) {
 const savedTheme = localStorage.getItem('b22_theme') || 'default';
 setTheme(savedTheme);
 
-// 👇️ Ici on construit le FS (pages) à partir des modules importés
 const fs = {
   aboutme: window.aboutme,
   projects: window.projects,
