@@ -10,8 +10,8 @@ mushrooms`,
 
 here's what i eat in the morning (around 8am)
 
-<a href="https://postimg.cc/xH8nXtQ8" target="_blank"></a>
-<a href="https://postimg.cc/y3dSMxPt" target="_blank"></a>
+<img src="public/img/breakfast_mix.png" target=" width="300"></a>
+<img src="public/img/breakfast_mix2.png" target=" width="300"></a>
 `
 };
 
