@@ -1,10 +1,5 @@
-window.food = {
-  fav: `tea
-rice
-chicken`,
-  dislike: `oysters
-mushrooms`,
-  breakfast: `
+window.breakfast = {
+breakfast: `
 
 <strong>breakfast time!</strong>
 

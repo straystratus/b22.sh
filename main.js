@@ -41,6 +41,7 @@ setTheme(savedTheme);
 const fs = {
   aboutme: window.aboutme,
   resources: window.resources,
+  random: window.random
 };
 
 let currentPath = [];
