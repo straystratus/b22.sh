@@ -308,8 +308,14 @@ input.addEventListener('keydown', function(e) {
       localStorage.setItem('commandHistory', JSON.stringify(commandHistory));
       historyIndex = commandHistory.length;
       const output = executeCommand(command);
-      if (command !== 'clear') addToHistory(command, output);
-      else clearScreen();
+      if (command !== 'clear') {
+        addToHistory(command, output);
+      } else {
+        clearScreen();
+        const promptDiv = document.createElement('div');
+        promptDiv.innerHTML = `<span class="prompt">${prompt.textContent}</span>`;
+        historyDiv.appendChild(promptDiv);
+      }
       input.value = '';
     }
     autocompleteState = { fragment: '', context: '', matches: [], index: 0, lastValue: '' }; // reset
