@@ -150,6 +150,7 @@ function displayTree() {
 
 function showHelp() {
   return `Available commands:
+lazy         - more intuitive version
 ls [dir]     - list directory contents
 cd [dir]     - change directory
 pwd          - print working directory
@@ -247,6 +248,10 @@ const commands = {
     return "No music to resume.";
   },
 };
+
+registerCommand("lazy", () => {
+  window.location.href = "/lazy.html";
+});
 
 function executeCommand(line) {
   const trimmed = line.trim();
