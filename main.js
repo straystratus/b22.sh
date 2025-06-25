@@ -249,10 +249,6 @@ const commands = {
   },
 };
 
-registerCommand("lazy", () => {
-  window.location.href = "/lazy.html";
-});
-
 function executeCommand(line) {
   const trimmed = line.trim();
   if (!trimmed) return '';
