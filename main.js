@@ -49,13 +49,13 @@ let commandHistory = JSON.parse(localStorage.getItem('commandHistory') || '[]');
 let historyIndex = commandHistory.length;
 
 const PLAYLIST = [
-  { name: "01", src: "music/01. Main Menu.mp3" },
-  { name: "02", src: "music/02. Theme Shop.mp3" },
-  { name: "03", src: "music/03. Friend List.mp3" },
-  { name: "04", src: "music/04. Menu 01 (Wii Music).mp3" },
-  { name: "05", src: "music/05. Nintendo 3DS Camera - Slideshow (Pop).mp3" },
-  { name: "06", src: "music/06. Credits (Wii Play Motion).mp3" },
-  { name: "07", src: "music/kaitenzushi.mp3" }
+  { name: "01", src: "public/music/01. Main Menu.mp3" },
+  { name: "02", src: "public/music/02. Theme Shop.mp3" },
+  { name: "03", src: "public/music/03. Friend List.mp3" },
+  { name: "04", src: "public/music/04. Menu 01 (Wii Music).mp3" },
+  { name: "05", src: "public/music/05. Nintendo 3DS Camera - Slideshow (Pop).mp3" },
+  { name: "06", src: "public/music/06. Credits (Wii Play Motion).mp3" },
+  { name: "07", src: "public/music/kaitenzushi.mp3" }
 ];
 
 let currentMusicIndex = null;
