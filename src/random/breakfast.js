@@ -1,6 +1,4 @@
-window.breakfast = {
-breakfast: `
-
+window.breakfast = `
 <strong>breakfast time!</strong>
 
 this is my morning nuts mix.
@@ -15,9 +13,4 @@ here are the macros and the cost for an average bowl.
 
 the goal is to be 50% full.
 i generaly eat this with a matcha but i like to change sometimes for a sencha or genmaicha.
-`
-};
-
-registerFile("aboutme/stratus/food/fav", "Text: food.fav");
-registerFile("aboutme/stratus/food/dislike", "Text: food.dislike");
-registerFile("aboutme/stratus/food/breakfast", "Text: food.breakfast");
+`;
