@@ -40,7 +40,6 @@ setTheme(savedTheme);
 
 const fs = {
   aboutme: window.aboutme,
-  projects: window.projects,
   resources: window.resources,
 };
 
