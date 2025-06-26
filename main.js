@@ -28,6 +28,7 @@ const THEMES = {
     '--file': '#00b6ff',
   },
 };
+
 function setTheme(theme) {
   if (!THEMES[theme]) return;
   Object.entries(THEMES[theme]).forEach(([k, v]) => {
@@ -35,7 +36,8 @@ function setTheme(theme) {
   });
   localStorage.setItem('b22_theme', theme);
 }
-const savedTheme = localStorage.getItem('b22_theme') || 'default';
+
+const savedTheme = localStorage.getItem('b22_theme') || '1';
 setTheme(savedTheme);
 
 const fs = {
@@ -67,9 +69,8 @@ const historyDiv = document.getElementById('history');
 const historyContainer = document.getElementById('history-container');
 
 function getCurrentDir() {
-  return currentPath.reduce(
-    (dir, segment) => (dir && typeof dir[segment] === "object" ? dir[segment] : null), fs
-  );
+  return currentPath.reduce((dir, segment) => 
+    (dir && typeof dir[segment] === "object" ? dir[segment] : null), fs);
 }
 
 function resolvePath(pathStr = "") {
@@ -115,7 +116,7 @@ function changeDirectory([dirArg]) {
 }
 
 function printWorkingDirectory() {
-  return '/' + currentPath.join('/');
+  return '/' + (currentPath.length ? currentPath.join('/') : '');
 }
 
 function readFile([filePath]) {
@@ -135,13 +136,13 @@ function readFile([filePath]) {
 function displayTree() {
   const dir = getCurrentDir();
   if (!dir) return 'tree: cannot access current directory';
-  let output = '/' + currentPath.join('/') + '\n';
+  let output = '/' + (currentPath.length ? currentPath.join('/') : '') + '\n';
   function build(node, prefix = '') {
     const keys = Object.keys(node);
     keys.forEach((k, i) => {
       const isLast = i === keys.length - 1;
-      output += `${prefix}${isLast ? '└── ' : '├── '}${k}\n`;
-      if (typeof node[k] === 'object') build(node[k], prefix + (isLast ? '    ' : '│   '));
+      output += `${prefix}${isLast ? '‚ĒĒ‚ĒÄ‚ĒÄ ' : '‚Ēú‚ĒÄ‚ĒÄ '}${k}\n`;
+      if (typeof node[k] === 'object') build(node[k], prefix + (isLast ? '    ' : '‚Ēā   '));
     });
   }
   build(dir);
@@ -168,13 +169,12 @@ function clearScreen() {
 }
 
 function printAsciiLetterByLetter(ascii, callback) {
-  const historyDiv = document.getElementById('history');
-  let i = 0;
-  let outputDiv = document.createElement('div');
+  const outputDiv = document.createElement('div');
   outputDiv.className = 'output';
   outputDiv.style.whiteSpace = 'pre';
   historyDiv.appendChild(outputDiv);
 
+  let i = 0;
   function printNext() {
     if (i < ascii.length) {
       outputDiv.textContent += ascii[i];
@@ -183,7 +183,7 @@ function printAsciiLetterByLetter(ascii, callback) {
     } else if (callback) {
       callback();
     }
-    historyDiv.scrollTop = historyContainer.scrollHeight;
+    historyContainer.scrollTop = historyContainer.scrollHeight;
   }
   printNext();
 }
@@ -196,9 +196,7 @@ const commands = {
   tree: displayTree,
   help: showHelp,
   clear: clearScreen,
-  b22: () => {
-    return null;
-  },
+  b22: () => null,
   theme: ([arg]) => {
     if (!arg) {
       return 'Available themes: ' + Object.keys(THEMES).join(', ') +
@@ -212,13 +210,9 @@ const commands = {
   },
   music: () => {
     let list = PLAYLIST.map(
-      (track, i) => (currentMusicIndex === i && audio && !audio.paused ? "▶ " : "  ") + (i + 1) + ". " + track.name
+      (track, i) => (currentMusicIndex === i && audio && !audio.paused ? "‚Ė∂ " : "  ") + (i + 1) + ". " + track.name
     ).join('\n');
-    return (
-      "Playlist:\n" +
-      list +
-      "\n\nUse :\n- play [n]\n- pause\n- resume"
-    );
+    return `Playlist:\n${list}\n\nUse :\n- play [n]\n- pause\n- resume`;
   },
   play: ([arg]) => {
     if (!arg || !/^\d+$/.test(arg)) return "use : play [n]";
@@ -251,28 +245,33 @@ const commands = {
 
 function executeCommand(line) {
   const trimmed = line.trim();
-  if (!trimmed) return '';
-  const [cmd, ...args] = trimmed.split(/\s+/);
-  if (cmd === 'b22') {
-    const ascii =
-`░▒▓█▓▒         ░▒▓███████▓▒░  ░▒▓███████▓▒░  
-░▒▓█▓▒                ░▒▓█▓▒░        ░▒▓█▓▒░ 
-░▒▓█▓▒                ░▒▓█▓▒░        ░▒▓█▓▒░ 
-░▒▓███████▓▒░   ░▒▓██████▓▒░   ░▒▓██████▓▒░  
-░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░        ░▒▓█▓▒░        
-░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░        ░▒▓█▓▒░        
-░▒▓███████▓▒░  ░▒▓████████▓▒░ ░▒▓████████▓▒░`;
-
+  if (!trimmed) return { output: '', silent: false };
+  
+  if (trimmed === 'b22') {
+    const ascii = 
+    `░▒▓█▓▒         ░▒▓███████▓▒░  ░▒▓███████▓▒░  
+  ░▒▓█▓▒                ░▒▓█▓▒░        ░▒▓█▓▒░ 
+  ░▒▓█▓▒                ░▒▓█▓▒░        ░▒▓█▓▒░ 
+  ░▒▓███████▓▒░   ░▒▓██████▓▒░   ░▒▓██████▓▒░  
+  ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░        ░▒▓█▓▒░        
+  ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░        ░▒▓█▓▒░        
+  ░▒▓███████▓▒░  ░▒▓████████▓▒░ ░▒▓████████▓▒░`;
     addToHistory(trimmed, '');
     printAsciiLetterByLetter(ascii);
-    return '';
+    return { output: '', silent: true };
   }
 
+  const [cmd, ...args] = trimmed.split(/\s+/);
   if (commands[cmd]) {
-    try { return commands[cmd](args); }
-    catch { return `${cmd}: error executing command`; }
+    try {
+      const result = commands[cmd](args);
+      return { output: result ?? '', silent: cmd === 'cd' || cmd === 'clear' };
+    } catch {
+      return { output: `${cmd}: error executing command`, silent: false };
+    }
   }
-  return `${cmd}: command not found`;
+
+  return { output: `${cmd}: command not found`, silent: false };
 }
 
 function updatePrompt() {
@@ -314,16 +313,19 @@ input.addEventListener('keydown', function(e) {
       commandHistory.push(command);
       localStorage.setItem('commandHistory', JSON.stringify(commandHistory));
       historyIndex = commandHistory.length;
-      const output = executeCommand(command);
+
+      const { output, silent } = executeCommand(command);
+
       if (command === 'clear') {
-        clearScreen();
-        addPromptOnly();
-      } else {
-        addToHistory(command, output);
-        if (!output) addPromptOnly();
+        input.value = '';
+        return;
       }
-      input.value = '';
+
+      addToHistory(command, output);
+
+      if (!output && !silent) addPromptOnly();
     }
+    input.value = '';
     autocompleteState = { fragment: '', context: '', matches: [], index: 0, lastValue: '' };
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
@@ -334,10 +336,8 @@ input.addEventListener('keydown', function(e) {
     if (historyIndex < commandHistory.length - 1) input.value = commandHistory[++historyIndex];
     else { historyIndex = commandHistory.length; input.value = ''; }
     autocompleteState = { fragment: '', context: '', matches: [], index: 0, lastValue: '' };
-  }
-  else if (e.key === 'Tab') {
+  } else if (e.key === 'Tab') {
     e.preventDefault();
-
     const value = input.value;
     const split = value.trim().split(/\s+/);
 
@@ -392,5 +392,7 @@ input.addEventListener('keydown', function(e) {
 });
 
 document.addEventListener('click', () => input.focus());
-window.addEventListener('load', () => input.focus());
-updatePrompt();
+window.addEventListener('load', () => {
+  input.focus();
+  updatePrompt();
+});
