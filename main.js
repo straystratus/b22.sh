@@ -279,6 +279,13 @@ function updatePrompt() {
   prompt.textContent = `deus@machina:/${currentPath.join('/')}$ `;
 }
 
+function addPromptOnly() {
+  const promptDiv = document.createElement('div');
+  promptDiv.innerHTML = `<span class="prompt">${prompt.textContent}</span>`;
+  historyDiv.appendChild(promptDiv);
+  historyContainer.scrollTop = historyContainer.scrollHeight;
+}
+
 function addToHistory(command, output) {
   const cmdDiv = document.createElement('div');
   cmdDiv.innerHTML = `<span class="prompt">${prompt.textContent}</span><span class="command">${command}</span>`;
@@ -308,17 +315,16 @@ input.addEventListener('keydown', function(e) {
       localStorage.setItem('commandHistory', JSON.stringify(commandHistory));
       historyIndex = commandHistory.length;
       const output = executeCommand(command);
-      if (command !== 'clear') {
-        addToHistory(command, output);
-      } else {
+      if (command === 'clear') {
         clearScreen();
-        const promptDiv = document.createElement('div');
-        promptDiv.innerHTML = `<span class="prompt">${prompt.textContent}</span>`;
-        historyDiv.appendChild(promptDiv);
+        addPromptOnly();
+      } else {
+        addToHistory(command, output);
+        if (!output) addPromptOnly();
       }
       input.value = '';
     }
-    autocompleteState = { fragment: '', context: '', matches: [], index: 0, lastValue: '' }; // reset
+    autocompleteState = { fragment: '', context: '', matches: [], index: 0, lastValue: '' };
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
     if (historyIndex > 0) input.value = commandHistory[--historyIndex];
